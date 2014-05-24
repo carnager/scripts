@@ -1,0 +1,16 @@
+#!/bin/bash
+cd "$1"
+if [ "$3" = opus ]
+then export CODEC="opus -q 128"
+elif [ "$3" = ogg ]
+then export CODEC="ogg -q 6"
+elif [ "$3" = mp3 ]
+then export CODEC="mp3"
+elif [ "$3" = flac ]
+then export CODEC="flac"
+else
+echo "Syntax: batchenc INPUTDIR OUTPUTDIR {opus,ogg,flac,mp3}"
+:
+exit
+fi
+find * -type f -name '*.flac' -exec dirname '{}' ';' | sort -u | while read d; echo "$d"; do caudec -P "$2" -k -s -c $CODEC "$d"/*.flac; done

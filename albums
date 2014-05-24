@@ -1,0 +1,3 @@
+mpc list album artist "$@"
+echo "---"
+echo "$(mpc list album artist "$@" | wc -l) Releases by "$@""

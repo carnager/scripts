@@ -1,0 +1,785 @@
+#!/bin/bash
+shopt -s globstar
+
+# Change this, if you have subfolders for multi-disc albums. this should match the name of your subfolders, exluding the number
+cd_divider=CD
+
+# use artist or albumartist for album ratings
+mpd_artist=albumartist
+music_path="/mnt/wasteland/Audio/Rips"
+
+
+dplayPrompt () {
+    menu=("0. Add/Insert/Replace Artist"
+          "1. Add/Insert/Replace Album"
+          "2. Add/Insert/Replace Track"
+          "3. Browse Library"
+          "4. Play Random Album"
+          "5. Add Random Songs"
+          "6. Show Current Queue"
+          "---"
+          "7. Current Artist"
+          "---"
+          "8. Options"
+          "9. Lookup"
+          "r. Ratings")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "MPD Menu:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        0.*) dplaySubPrompt -x ;;
+        1.*) dplaySubPrompt -a ;;
+        2.*) dplaySubPrompt -t ;;
+        3.*) mplay -a ;;
+        4.*) mpc clear; mpc findadd album "$(mpc list album | shuf -n1)"; mpc play ;;
+        5.*) dplayRandomPrompt ;;
+        6.*) dplayQueue ;;
+        7.*) currentPrompt ;;
+        8.*) dplayOptionsPrompt ;;
+        9.*) infoPrompt ;;
+        r.*) ratingPrompt ;;
+          *) exit
+    esac
+}
+
+currentPrompt () {
+    menu=("1. Albums"
+          "2. Tracks"
+          "---"
+          "0: back to MPD menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "Current Artist:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) currentAlbums ;;
+        2.*) currentTracks ;;
+        0:*) dplayPrompt ;;
+          *) return
+    esac
+}
+
+ratingPrompt () {
+    menu=("1. Rate current Album"
+          "2. Load Rated Albums"
+          "3. Load Random Rated Album"
+          "---"
+          "4. Rate current Track"
+          "5. Load Rated Tracks"
+          "6. Load Random Rated Tracks"
+          "---"
+          "0: back to MPD menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "Ratings:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) rateAlbum ;;
+        2.*) loadRatedAlbums ;;
+        3.*) loadRandomRating ;;
+        4.*) rateTrack ;;
+        5.*) loadRatedTracks ;;
+        6.*) loadRandomRatedTracks ;;
+        0:*) dplayPrompt ;;
+          *) return
+    esac
+}
+
+
+infoPrompt () {
+    menu=("1. Artist Info"
+          "2. Album Info"
+          "3. Current Track Lyrics"
+          "---"
+          "0: << back to MPD menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "MPD Menu:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) surfraw yubnub allmusic $(mpc current -f %artist%) ;;
+        2.*) surfraw yubnub allmusic $(mpc current -f %album%) ;;
+        3.*) surfraw yubnub google $(mpc current -f %title%) $(mpc current -f %artist%) lyrics ;;
+        0:*) dplayPrompt ;;
+          *) return
+    esac
+}
+
+
+
+managePrompt () {
+    menu=("1. Add/Insert/Replace Album"
+          "2. Add/Insert/Replace Track"
+          "3. Browse Library"
+          "4. Play Random Album"
+          "5. Add Random Songs"
+          "6. Show Current Queue"
+          "---"
+          "0: << back to MPD menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "MPD Menu:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) dplaySubPrompt -a ;;
+        2.*) dplaySubPrompt -t ;;
+        3.*) mplay -a ;;
+        4.*) mpc clear; mpc search album "$(mpc list album | shuf -n1)" | mpc add; mpc play ;;
+        5.*) dplayRandomPrompt ;;
+        6.*) dplayQueue ;;
+        0.*) dplayPrompt ;;
+          *) return
+    esac
+}
+
+
+dplayRandomPrompt () {
+    rsongs="$(echo " " | dmenu_t -p "Nr. of Songs:" | xargs echo)"
+    dplay -r $rsongs
+     }
+
+
+
+dplaySubPrompt () {
+    menu=("1. Add"
+          "2. Insert"
+          "3. Replace"
+          "---"
+          "0: << back to MPD Menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "MPD Menu:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) dplay $1 add ;;
+        2.*) dplay $1 insert ;;
+        3.*) dplay $1 replace ;;
+        0:*) dplayPrompt ;;
+          *) return
+   esac
+}
+
+
+dplayOptionsPrompt () {
+    menu=("1. Toggle Random"
+          "2. Toggle Repeat"
+          "3. Toggle Single Mode"
+          "4. Toggle Consume Mode"
+          "5. Set Crossfade"
+          "---"
+          "6. Volume"
+          "7. Outputs"
+          "8. Replaygain"
+          "---"
+          "9. Lastfm"
+          "---"
+          "0: << back to MPD Menu")
+
+     prompt() {
+         printf "%s\n" "$@" | dmenu_t -p "MPD Options:"
+     }
+
+     case "$(prompt "${menu[@]}")" in
+         1.*) mpc random ;;
+         2.*) mpc repeat ;;
+         3.*) mpc single ;;
+         4.*) mpc consume ;;
+         5.*) crossfadePrompt ;;
+         6.*) volumePrompt ;;
+         7.*) outputPrompt ;;
+         8.*) replaygainsubMenu ;;
+         9.*) lastfm ;;
+         0:*) dplayPrompt ;;
+           *) return
+    esac
+}
+
+
+replaygainsubMenu () {
+    ("1. Enable Albumgain"
+     "2. Enable Trackgain"
+     "3. Disable Replaygain"
+     "---"
+     "0: << back to MPD Menu")
+
+     prompt() {
+         printf "%s\n" "$@" | dmenu_t -p "MPD Options:"
+     }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) mpc replaygain album ;;
+        2.*) mpc replaygain track ;;
+        3.*) mpc replaygain none ;;
+        0:*) dplayOptionsPrompt ;;
+    esac
+}
+
+
+crossfadePrompt () {
+    menu=("1"
+          "2"
+          "3"
+          "4"
+          "5"
+          "---"
+          "0: << back to MPD Options")
+
+     prompt() {
+         printf "%s\n" "$@" | dmenu_t -p "Crossfade:"
+     }
+
+     case "$(prompt "${menu[@]}")" in
+         1) mpc crossfade 1 ;;
+         2) mpc crossfade 2 ;;
+         3) mpc crossfade 3 ;;
+         4) mpc crossfade 4 ;;
+         5) mpc crossfade 5 ;;
+         0:*) dplayOptionsPrompt ;;
+           *) return
+    esac
+}
+
+
+volumePrompt () {
+    levels="10
+20
+30
+40
+50
+60
+70
+80
+90
+100"
+
+         menu=$(echo "$levels" | dmenu_t -p "Volume")
+         mpc volume $menu
+}
+
+
+dplayQueue () {
+    TITLE=$(mpc playlist | dmenu_t);
+    if [ "$TITLE" = "" ]; then exit; fi
+    POS=$(mpc playlist | grep -n "$TITLE" | awk -F: '{print $1}')
+    mpc play $POS;
+}
+
+
+outputPrompt () {
+    menu="$(echo -e "$(mpc outputs)" | dmenu_t -p "Outputs")";
+    if [[ "$menu" = "" ]]
+        then dplayPrompt;
+    else
+        mpc toggleoutput $(echo "$menu" | awk '{print $2}');
+        notify-send "MPD" "$(echo "$menu" | sed -e 's/enabled$/disabled/;ta;s/disabled$/enabled/;:a;')";
+    fi
+}
+
+currentAlbums () {
+    ARTIST=$(mpc current -f %artist%)
+    ALBUM=$(mpc list album artist "$ARTIST" | dmenu_t -p "Albums by current Artist:")
+    if [ "$ALBUM" = "" ]; then currentPrompt;
+    else currentSubAlbum -ca "$ALBUM";
+    fi
+}
+
+currentTracks () {
+    TRACK=$(mpc find artist "$(mpc current -f %artist%)" | dmenu_t -p "Tracks by current Artist:")
+    if [ "$TRACK" = "" ]; then currentPrompt;
+    else currentSubTrack -ct "$TRACK";
+    fi
+}
+
+currentSubTrack () {
+    menu=("1. Add"
+          "2. Insert"
+          "3. Replace"
+          "---"
+          "0: << back to MPD Menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "MPD Menu:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) dplay $1 add "$2";;
+        2.*) dplay $1 insert "$2";;
+        3.*) dplay $1 replace "$2";;
+        0:*) dplayPrompt ;;
+          *) return
+   esac
+}
+
+currentSubAlbum () {
+    menu=("1. Add"
+          "2. Insert"
+          "3. Replace"
+          "---"
+          "0: << back to MPD Menu")
+
+    prompt() {
+        printf "%s\n" "$@" | dmenu_t -p "MPD Menu:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        1.*) dplay $1 add "$2";;
+        2.*) dplay $1 insert "$2";;
+        3.*) dplay $1 replace "$2";;
+        0:*) dplayPrompt ;;
+          *) return
+   esac
+}
+
+
+rateAlbum () {
+    ratings="$(echo " " | dmenu_t -p "Rating:" | xargs echo)"
+    if [ ratings = "" ]; then
+        exit
+    else
+        cd "$music_path"
+        cd "$(dirname "$(mpc current -f %file%)")"
+        if [[ "$(pwd)" == */"$cd_divider"* ]]; then
+            cd ..
+        else echo " "
+        fi
+        rm -f rating.txt
+        echo "$ratings/10" > rating.txt
+        echo "$(mpc current -f "%$mpd_artist%")" >> rating.txt
+        echo "$(mpc current -f '%album%')" >> rating.txt
+        echo "$(mpc current -f '%date%')" >> rating.txt
+        notify-send "mpdMenu" "Rated $(mpc current -f "%$mpd_artist% - %album%") with $ratings"
+    fi
+}
+
+rateTrack () {
+    extension=$(mpc current -f %file% | sed 's/.*\.//')
+    ratings="$(echo " " | dmenu_t -p "Rating:" | xargs echo)"
+    if [ ratings = "" ]; then
+        exit
+    else
+    cd "$music_path"
+        if [[ "$extension" == flac ]]; then
+            metaflac --remove-tag=comment "$(mpc current -f %file%)"
+            metaflac --set-tag=comment="$ratings" "$(mpc current -f %file%)"
+#             echo "Not yet implemented" && notify-send "mpdMenu" "Rating Tracks is not yet implemented"
+        elif [[ "$extension" == mp3 ]]; then
+             eyeD3 --add-comment "$ratings" "$(mpc current -f %file%)"
+        fi
+    fi
+}
+
+loadRatedAlbums () {
+    cd "$music_path"
+    ratings="$(echo " " | dmenu_t -p "Rating:" | xargs echo)"
+    albums="$(grep -r "$ratings/10" **/rating.txt | sed -e 's/\/rating.txt.*//g')"
+    album="$(echo -e "replace all\nadd all\n---\n$albums" | dmenu_t)";
+    if [ "$album" = "" ]; then ratePrompt;
+    elif [ "$album" = "replace all" ]; then
+        mpc clear
+        grep -r "$ratings/10" **/rating.txt | sed -e 's/\/rating.txt.*//g' | while read line; do mpc add "$line" && mpc play; done
+    elif [ "$album" = "add all" ]; then
+        grep -r "$ratings/10" **/rating.txt | sed -e 's/\/rating.txt.*//g' | while read line; do mpc add "$line"; done ;
+    else mpc add "$album"
+    fi
+}
+
+loadRatedTracks () {
+    ratings="$(echo " " | dmenu_t -p "Rating:" | xargs echo)"
+    if [ ratings = "" ]; then
+        exit
+    else
+        for i in "$ratings"; do mpc find comment "$i" | mpc add; done
+    fi
+}
+
+loadRandomRatedTracks () {
+    number="$(echo " " | dmenu_t -p "Number of Songs:" | xargs echo)"
+    ratings_min="$(echo " " | dmenu_t -p "Minimum Rating:" | xargs echo)"
+    ratings_max="$(echo " " | dmenu_t -p "Maximum Rating:" | xargs echo)"
+    for ((i="$ratings_min"; i<="$ratings_max"; i++)); do mpc find comment "$i" | shuf | head -n "$number" | mpc add; done
+}
+
+
+loadRandomRating () {
+    cd "$music_path"
+    ratings_min="$(echo " " | dmenu_t -p "Minimum Rating:" | xargs echo)"
+    ratings_max="$(echo " " | dmenu_t -p "Maximum Rating:" | xargs echo)"
+    mpc clear
+    grep -lF "$(seq $ratings_min $ratings_max)" **/rating.txt | sed -e 's/\/rating.txt.*//g' | shuf -n 1 | while read line; do
+    mpc add "$line" && mpc play; done
+}
+
+
+
+dplay () {
+case $1 in
+    -x)
+     ARTIST=$(echo -e "$(mpc list "$mpd_artist")" | dmenu_t -p "$2 Choose Artist");
+     if [[ "$ARTIST" = "" ]]
+         then echo "no selection made"
+     else
+         if [[ $2 == replace ]]
+           then mpc clear
+                mpc find "$mpd_artist" "$ARTIST" | mpc add && mpc play;
+         elif [[ $2 == insert ]]
+            then mpc find "$mpd_artist" "$ARTIST" | mpc insert;
+         else mpc find "$mpd_artist" "$ARTIST" | mpc add;
+         fi
+     fi
+;;
+    -a)
+     ALBUM=$(echo -e "$(mpc list album)" | dmenu_t -p "$2 Choose Album");
+     if [[ "$ALBUM" = "" ]]
+         then echo "no selection made"
+     else
+         if [[ $2 == replace ]]
+           then mpc clear
+                mpc find album "$ALBUM" | mpc add && mpc play;
+         elif [[ $2 == insert ]]
+            then mpc find album "$ALBUM" | mpc insert;
+         else mpc find album "$ALBUM" | mpc add;
+         fi
+     fi
+;;
+    -t)
+     TRACK=$(echo -e "$(mpc listall)" | dmenu_t -p "$2 Choose Track");
+     if [[ "$TRACK" = "" ]]
+         then echo "no selection made"
+     else
+         if [[ $2 == replace ]]
+           then mpc clear
+                mpc add "$TRACK" && mpc play;
+         elif [[ $2 == insert ]]
+           then mpc insert "$TRACK";
+         else mpc add "$TRACK";
+         fi
+     fi
+;;
+   -ct)
+        if [[ $2 == replace ]]
+          then mpc clear
+               mpc add "$3" && mpc play;
+        elif [[ $2 == insert ]]
+          then mpc insert "$3";
+        else mpc add "$3";
+        fi
+;;
+   -ca)
+         if [[ $2 == replace ]]
+           then mpc clear
+                mpc find album "$3" | mpc add && mpc play;
+         elif [[ $2 == insert ]]
+            then mpc find album "$3" | mpc insert;
+         else mpc find album "$3" | mpc add;
+         fi
+;;
+    -r)
+# Make sure the input argument is an integer.
+# Set number $num of songs to be added.
+if [ $# -eq 0 ]; then
+    hjalp
+    exit
+elif [ $1 = "--help" -o $2 = "-h" ]; then
+    hjalp
+    exit
+else
+    if [ `echo $2 | grep [^0-9]` ]; then
+	echo "Error: Argument not an integer. Exiting."
+	exit
+    else
+	num=$2
+    fi
+fi
+# Get all song file names in database.
+# We borrow a file in /tmp
+mpc listall > /tmp/songs.tmp
+numSongs=`wc -l /tmp/songs.tmp | sed "s/ \/tmp\/songs.tmp//"`
+if [ $numSongs -eq 0 ]; then
+    echo "Error: No songs in database."
+    rm /tmp/songs.tmp
+    exit
+fi
+# Add all songs if $num is too big
+if [ $num -gt $numSongs ]; then
+    num=$numsongs
+fi
+for (( i = 1; i <= $num; i++ ))
+do
+    songnr=`expr 1 + $RANDOM % $numSongs`
+    song=`cat /tmp/songs.tmp | head -n $songnr | tail -n 1`
+    # Don't add the same song twice, fix number of songs
+    mpc add "$song" && sed -i "\^$song^d" /tmp/songs.tmp && numSongs=`expr $numSongs - 1`
+done
+# Make it squeaky clean
+rm /tmp/songs.tmp
+;;
+*)
+esac
+}
+
+
+mplay () {
+ESC_ACTION="dplayPrompt"
+addaftercurrent(){
+
+	#playlist is empty, just add the song
+	if [ "$(mpc playlist | wc -l)" == "0" ]; then
+		mpc add "$1"
+
+	#there is no current song so mpd is stopped
+	#it seems to be impossible to determine the current songs' position when
+	#mpd is stopped, so just add to the end
+	elif [ -z "$(mpc current)" ]; then
+		mpc play
+		CUR_POS=$(mpc | tail -2 | head -1 | awk '{print $2}' | sed 's/#//' | awk -F/ '{print $1}')
+		END_POS=$(mpc playlist | wc -l)
+		mpc add "$1"
+		mpc move $(($END_POS+1)) $(($CUR_POS+1))
+		mpc stop
+
+	#at least 1 song is in the playlist, determine the position of the
+	#currently played song and add $1 after it
+	else
+
+		CUR_POS=$(mpc | tail -2 | head -1 | awk '{print $2}' | sed 's/#//' | awk -F/ '{print $1}')
+		END_POS=$(mpc playlist | wc -l)
+		mpc add "$1"
+		mpc move $(($END_POS+1)) $(($CUR_POS+1))
+	fi
+}
+addaftercurrentandplay(){
+
+	#playlist is empty, just add the song
+	if [ "$(mpc playlist | wc -l)" == "0" ]; then
+		mpc add "$1"
+		mpc play
+
+	#there is no current song so mpd is stopped
+	#it seems to be impossible to determine the current songs' position when
+	#mpd is stopped, so just add to the end
+	elif [ -z "$(mpc current)" ]; then
+		mpc play
+		CUR_POS=$(mpc | tail -2 | head -1 | awk '{print $2}' | sed 's/#//' | awk -F/ '{print $1}')
+		END_POS=$(mpc playlist | wc -l)
+		mpc add "$1"
+		mpc move $(($END_POS+1)) $(($CUR_POS+1))
+		mpc play $(($CUR_POS+1))
+
+	#at least 1 song is in the playlist, determine the position of the
+	#currently played song and add $1 after it
+	else
+
+		CUR_POS=$(mpc | tail -2 | head -1 | awk '{print $2}' | sed 's/#//' | awk -F/ '{print $1}')
+		END_POS=$(mpc playlist | wc -l)
+		mpc add "$1"
+		mpc move $(($END_POS+1)) $(($CUR_POS+1))
+		mpc play $(($CUR_POS+1))
+	fi
+}
+
+case $1 in
+
+	-a|--artist)
+
+	while true; do
+
+		ARTIST="$(mpc list artist | sort -f | dmenu_t -p "Select Artist:")";
+		if [ "$ARTIST" = "" ]; then exit; fi
+
+		while true; do
+
+			ALBUMS=$(mpc list album artist "$ARTIST" | sort -f);
+			ALBUM=$(echo -e "replace all\nadd all\n--------------------------\n$ALBUMS" | dmenu_t -p "Choose:");
+			if [ "$ALBUM" = "" ]; then mplay;
+
+			elif [ "$ALBUM" = "replace all" ]; then
+				CUR_SONG=$(mpc current)
+				mpc clear
+				mpc find artist "$ARTIST" | mpc add
+				if [ -n "$CUR_SONG" ]; then mpc play; fi
+				exit
+			elif [ "$ALBUM" = "add all" ]; then
+				mpc find artist "$ARTIST" | mpc add
+				exit
+			fi
+
+			while true; do
+
+				TITLES=$(mpc list title artist "$ARTIST" album "$ALBUM")
+				TITLE=$(echo -e "replace all\nadd all\n--------------------------\n$TITLES" | dmenu_t -p "Choose:");
+				if [ "$TITLE" = "" ]; then exit
+				elif [ "$TITLE" = "replace all" ]; then
+					CUR_SONG=$(mpc current)
+					mpc clear;
+					mpc find artist "$ARTIST" album "$ALBUM" | mpc add
+					if [ -n "$CUR_SONG" ]; then mpc play; fi
+					exit
+				elif [ "$TITLE" = "add all" ]; then
+					mpc find artist "$ARTIST" album "$ALBUM" | mpc add
+					exit
+
+				fi
+
+				while true; do
+					DEC=$(echo -e "add after current and play\nadd after current\nreplace\nadd at the end" | dmenu_t -p "Choose:");
+					case $DEC in
+
+						"")
+						exit
+						;;
+
+						"add after current and play")
+						addaftercurrentandplay "$(mpc find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 )"
+						;;
+
+						"add after current")
+						addaftercurrent "$(mpc find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 )"
+						;;
+
+						"replace")
+						CUR_SONG=$(mpc current)
+						mpc clear
+						mpc find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 | mpc add
+						if [ -n "$CUR_SONG" ]; then mpc play; fi
+						;;
+
+						"add at the end")
+						mpc find artist "$ARTIST" album "$ALBUM" title "$TITLE" | head -1 | mpc add
+						;;
+
+					esac
+					dplayPrompt
+				done
+			done
+		done
+	done
+	;;
+
+	-t|--track)
+
+	TITLE=$(mpc list title | sort -f | dmenu_t -p "Choose Track:")
+	if [ "$TITLE" = "" ]; then exit; fi
+
+	SONG=$(mpc find title "$TITLE" | head -1)
+	addaftercurrentandplay "$SONG"
+	;;
+
+	-p|--playlist)
+	PLAYLIST=$(mpc lsplaylists | dmenu_t -p "Choose Playlist:");
+	if [ "$PLAYLIST" = "" ]; then exit; fi
+	CUR_SONG=$(mpc current)
+	mpc clear
+	mpc load "$PLAYLIST";
+	if [ -n "$CUR_SONG" ]; then mpc play; fi
+	;;
+
+	-j|--jump)
+
+	TITLE=$(mpc playlist | dmenu_t -p "Choose Track:");
+	if [ "$TITLE" = "" ]; then exit; fi
+	POS=$(mpc playlist | grep -n "$TITLE" | awk -F: '{print $1}')
+	mpc play $POS;
+	;;
+
+	-l|--longplayer)
+
+	while true; do
+
+		ALBUM=$(mpc list album | sort -f | dmenu_t -p "Choose Album:");
+		if [ "$ALBUM" = "" ]; then exit;
+		fi
+
+		while true; do
+
+			TITLES=$(mpc list title album "$ALBUM")
+			TITLE=$(echo -e "replace all\nadd all\n--------------------------\n$TITLES" | dmenu_t -p "Choose:");
+			if [ "$TITLE" = "" ]; then $ESC_ACTION
+			elif [ "$TITLE" = "replace all" ]; then
+				CUR_SONG=$(mpc current)
+				mpc clear;
+				mpc find album "$ALBUM" | mpc add
+				if [ -n "$CUR_SONG" ]; then mpc play; fi
+				$ESC_ACTION
+			elif [ "$TITLE" = "add all" ]; then
+				mpc find album "$ALBUM" | mpc add
+				$ESC_ACTION
+
+			fi
+
+			while true; do
+				DEC=$(echo -e "add after current and play\nadd after current\nreplace\nadd at the end" | dmenu_t -p "Choose:");
+				case $DEC in
+
+					"")
+					exit
+					;;
+
+					"add after current and play")
+					addaftercurrentandplay "$(mpc find album "$ALBUM" title "$TITLE" | head -1 )"
+					;;
+
+					"add after current")
+					addaftercurrent "$(mpc find album "$ALBUM" title "$TITLE" | head -1 )"
+					;;
+
+					"replace")
+					CUR_SONG=$(mpc current)
+					mpc clear
+					mpc find album "$ALBUM" title "$TITLE" | head -1 | mpc add
+					if [ -n "$CUR_SONG" ]; then mpc play; fi
+					;;
+
+					"add at the end")
+					mpc find album "$ALBUM" title "$TITLE" | head -1 | mpc add
+					;;
+
+				esac
+				dplayPrompt
+			done
+		done
+	done
+	;;
+
+	*)
+	echo "Usage: mpc_control [OPTION]"
+	echo "Try 'mpc_control --help' for more information."
+	;;
+
+esac
+}
+
+################################################################################
+
+source $HOME/.config/dmenurc
+if [[ "$backend" == "rofi" ]]
+    then function dmenu_t () {
+    rofi -dmenu "$@"
+}
+
+elif [[ "$backend" == "dmenu" ]]
+    then function dmenu_t () {
+    dmenu -l 15 "$@"
+}
+fi
+
+
+if [[ "$1" == "-album" ]]; then
+    dplay -a replace
+elif [[ "$1" == "-track" ]]; then
+    dplay -t add
+elif [[ "$1" == "-rate" ]]; then
+    ratingPrompt
+elif [[ "$1" == "-ra" ]]; then
+    mpc clear; mpc findadd album "$(mpc list album | shuf -n1)"; mpc play
+elif [[ "$1" == "-rs" ]]; then
+    mpc clear && mpc listall | shuf | head -n 200 | mpc add && mpc play
+else
+dplayPrompt
+fi

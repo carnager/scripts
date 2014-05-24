@@ -1,0 +1,46 @@
+#!/bin/sh
+ #
+ # mpdpl2html - MPD playlist to HTML
+ # by pfish - 2010
+ # Version 0.1
+ # License: GPL 2
+ #
+ # Requirements:
+ #       mpd
+ #       mpc
+ #       sed
+ #
+ 
+ #USER=`whoami`
+ STATS=`mpc stats | sed 's/$/\<br \/\>/'`
+ PLAYLIST=`mpc playlist | sed 's/$/\<br \/\>/'`
+ VERSION=`mpc version`
+ FILE="mpdplaylist.html"
+ DATE=`date -R`
+ 
+ echo "<!-- Generated with mpdpl2html by pfish - $DATE -->
+ <html>
+ <head>
+ <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /> 
+ <title>MPD playlist of $USER</title>
+ <style type=\"text/css\">
+ body {color: #ffffff; background-color: #001A57; font-size: 12px;}
+ h1 {color: #f28500; margin: 0; padding: 0;}
+ h2 {color: #f28500; margin: 0; padding: 0;}
+ hr {color: #f28500; border: 1;}
+ </style>
+ </head>
+ <body>
+ <h1>MPD playlist of $USER</h1>
+ <hr />
+ <h2>Statistics:</h2>
+ $VERSION
+ <br /><br />
+ $STATS
+ <br />
+ <h2>Playlist:</h2>
+ $PLAYLIST
+ <hr />
+ <small>Generated with mpdpl2html by pfish - $DATE</small>
+ </body>
+ </html>" > $FILE
