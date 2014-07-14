@@ -1,6 +1,6 @@
 #!/bin/bash
 shopt -s globstar
-backend=slmenu
+backend=dmenu
 
 # Change this, if you have subfolders for multi-disc albums. this should match the name of your subfolders, exluding the number
 cd_divider=CD
