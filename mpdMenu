@@ -1,5 +1,6 @@
 #!/bin/bash
 shopt -s globstar
+backend=slmenu
 
 # Change this, if you have subfolders for multi-disc albums. this should match the name of your subfolders, exluding the number
 cd_divider=CD
@@ -757,7 +758,7 @@ esac
 
 ################################################################################
 
-source $HOME/.config/dmenurc
+
 if [[ "$backend" == "rofi" ]]
     then function dmenu_t () {
     rofi -dmenu "$@"
@@ -766,6 +767,11 @@ if [[ "$backend" == "rofi" ]]
 elif [[ "$backend" == "dmenu" ]]
     then function dmenu_t () {
     dmenu -l 15 "$@"
+}
+
+elif [[ "$backend" == "slmenu" ]]
+    then function dmenu_t () {
+    slmenu -l 15 "$@"
 }
 fi
 
@@ -779,7 +785,9 @@ elif [[ "$1" == "-rate" ]]; then
 elif [[ "$1" == "-ra" ]]; then
     mpc clear; mpc findadd album "$(mpc list album | shuf -n1)"; mpc play
 elif [[ "$1" == "-rs" ]]; then
-    mpc clear && mpc listall | shuf | head -n 200 | mpc add && mpc play
+    mpc clear && mpc listall | shuf | head -n 20 | mpc add && mpc play
+elif [[ "$1" == "-show" ]]; then
+    notify-send "$(mpc current --format '%artist% - %title%')" "$(mpc current --format '\n%date% %album%')"
 else
 dplayPrompt
 fi
