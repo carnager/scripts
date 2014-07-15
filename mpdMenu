@@ -29,6 +29,8 @@ dplayPrompt () {
           "6  Ratings"
           "7  Lookup"
           "---"
+          "8  Love current song on LastFM"
+          "---"
           "/  Search")
 
     prompt() {
@@ -44,6 +46,7 @@ dplayPrompt () {
         5*) dplayOptionsPrompt ;;
         6*) ratingPrompt ;;
         7*) infoPrompt ;;
+        8*) lastfm-mpd-cli love > /dev/null && notify-send "MPD" "Loved $(mpc current -f '%title%') on LastFM" ;;
           *) exit
     esac
 }
@@ -220,10 +223,8 @@ mpds_check="$(ssh $ssh_host -q -t 'bash -c "pgrep mpdscribble"')"
           "5  Replaygain:   $(echo $rgain)"
           "6  Scrobbling:   $(echo $scrobble)"
           "---"
-          "7  Love Track on LastFM"
-          "---"
-          "8  Set Crossfade"
-          "9  Manage Outputs"
+          "7  Set Crossfade"
+          "8  Manage Outputs"
           "---"
           "0  back to MPD Menu")
 
@@ -238,9 +239,8 @@ mpds_check="$(ssh $ssh_host -q -t 'bash -c "pgrep mpdscribble"')"
          4*) mpc consume && dplayOptionsPrompt ;;
          5*) replayGain && dplayOptionsPrompt ;;
          6*) lastFM && dplayOptionsPrompt ;;
-         7*) lastfm-mpd-cli love > /dev/null && notify-send "MPD" "Loved Track $(mpc current -f '%title%') on LastFM" ;;
-         8*) crossfadePrompt ;;
-         9*) outputPrompt ;;
+         7*) crossfadePrompt ;;
+         8*) outputPrompt ;;
          0*) dplayPrompt ;;
            *) return
     esac
