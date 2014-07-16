@@ -24,12 +24,11 @@ dplayPrompt () {
           "---"
           "3  Current Artist"
           "4  Current Queue"
+          "5  Love current Song on LastFM"
           "---"
-          "5  Options"
-          "6  Ratings"
-          "7  Lookup"
-          "---"
-          "8  Love current song on LastFM"
+          "6  Options"
+          "7  Ratings"
+          "8  Lookup"
           "---"
           "/  Search")
 
@@ -42,11 +41,11 @@ dplayPrompt () {
         2*) mpc clear && mpc listall | shuf | head -n "$value" | mpc add && mpc play ;;
         3*) currentPrompt ;;
         4*) dplayQueue ;;
+        5*) lastfm-mpd-cli love > /dev/null && notify-send "MPD" "Loved $(mpc current -f '%title%') on LastFM" ;;
         /*) searchPrompt ;;
-        5*) dplayOptionsPrompt ;;
-        6*) ratingPrompt ;;
-        7*) infoPrompt ;;
-        8*) lastfm-mpd-cli love > /dev/null && notify-send "MPD" "Loved $(mpc current -f '%title%') on LastFM" ;;
+        6*) dplayOptionsPrompt ;;
+        7*) ratingPrompt ;;
+        8*) infoPrompt ;;
           *) exit
     esac
 }
@@ -182,10 +181,11 @@ dplaySubPrompt () {
 
 
 dplayOptionsPrompt () {
-    single=$(mpc status | tail -1 | awk -F ':' '{ print $5 }' | cut -d ' ' -f 2)
-    random=$(mpc status | tail -1 | awk -F ':' '{ print $4 }' | cut -d ' ' -f 2)
-    consume=$(mpc status | tail -1 | awk -F ':' '{ print $6 }' | cut -d ' ' -f 2)
-    repeat=$(mpc status | tail -1 | awk -F ':' '{ print $3 }' | cut -d ' ' -f 2)
+export status="$(mpc status)"
+    single=$(echo "$status" | tail -1 | awk -F ':' '{ print $5 }' | cut -d ' ' -f 2)
+    random=$(echo "$status" | tail -1 | awk -F ':' '{ print $4 }' | cut -d ' ' -f 2)
+    consume=$(echo "$status" | tail -1 | awk -F ':' '{ print $6 }' | cut -d ' ' -f 2)
+    repeat=$(echo "$status" | tail -1 | awk -F ':' '{ print $3 }' | cut -d ' ' -f 2)
 
 
 mpds_check="$(ssh $ssh_host -q -t 'bash -c "pgrep mpdscribble"')"
