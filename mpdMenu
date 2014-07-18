@@ -524,6 +524,8 @@ elif [[ "$1" == "-rs" ]]; then
     mpc clear && mpc listall | shuf | head -n 20 | mpc add && mpc play
 elif [[ "$1" == "-show" ]]; then
     notify-send "$(mpc current --format '%artist% - %title%')" "$(mpc current --format '\n%date% %album%')"
+elif [[ "$1" == "-lrated" ]]; then
+    for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "10" | mpc add; done
 else
 dplayPrompt
 fi
