@@ -525,7 +525,7 @@ elif [[ "$1" == "-rs" ]]; then
 elif [[ "$1" == "-show" ]]; then
     notify-send "$(mpc current --format '%artist% - %title%')" "$(mpc current --format '\n%date% %album%')"
 elif [[ "$1" == "-lrated" ]]; then
-    for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "10" | mpc add; done
+    for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "$value" | mpc add; done
 else
 dplayPrompt
 fi
