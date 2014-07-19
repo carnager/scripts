@@ -1,24 +1,21 @@
 #!/bin/bash
 shopt -s globstar
-source $HOME/.config/mpdMenu/config
-
-
-#backend=rofi
+backend=rofi
 
 # Number of Songs to be added for "Random Tracks"
-#value=20
+value=20
 
 # Change this, if you have subfolders for multi-disc albums. this should match the name of your subfolders, exluding the number
-#cd_divider=CD
+cd_divider=CD
 
 # use artist or albumartist for album ratings
-#mpd_artist=albumartist
-#music_path="/mnt/wasteland/Audio/Rips"
+mpd_artist=albumartist
+music_path="/mnt/wasteland/Audio/Rips"
 
 # Fill these if mpdscribble runs on a different host
 # set to 0 if mpdscribble runs locally
-#ssh_lastfm=1
-#ssh_host=picon
+ssh_lastfm=1
+ssh_host=picon
 
 
 dplayPrompt () {
@@ -521,9 +518,10 @@ if [[ "$1" == "-h" ]]; then
     echo ""
     echo "Options"
     echo "  -h         this help message"
-    echo "  -album     Replace current with album()"
-    echo "  -track     Add track()"
+    echo "  -album     replace current with album()"
+    echo "  -track     add track()"
     echo "  -rate      show rating prompt"
+    echo "  -tr        rate current track"
     echo "  -ra        play random album"
     echo "  -rs        play x random songs (defined with $value"
     echo "  -show      show currently playing track"
@@ -535,6 +533,8 @@ elif [[ "$1" == "-track" ]]; then
     dplay -t add
 elif [[ "$1" == "-rate" ]]; then
     ratingPrompt
+elif [[ "$1" == "-tr" ]]; then
+    rateTrack
 elif [[ "$1" == "-ra" ]]; then
     mpc clear; mpc findadd album "$(mpc list album | shuf -n1)"; mpc play
 elif [[ "$1" == "-rs" ]]; then
