@@ -1,21 +1,24 @@
 #!/bin/bash
 shopt -s globstar
-backend=rofi
+
+source $HOME/.config/clerk/config
+
+#backend=rofi
 
 # Number of Songs to be added for "Random Tracks"
-value=20
+#value=20
 
 # Change this, if you have subfolders for multi-disc albums. this should match the name of your subfolders, exluding the number
-cd_divider=CD
+#cd_divider=CD
 
 # use artist or albumartist for album ratings
-mpd_artist=albumartist
-music_path="/mnt/wasteland/Audio/Rips"
+#mpd_artist=albumartist
+#music_path="/mnt/wasteland/Audio/Rips"
 
 # Fill these if mpdscribble runs on a different host
 # set to 0 if mpdscribble runs locally
-ssh_lastfm=1
-ssh_host=picon
+#ssh_lastfm=1
+#ssh_host=picon
 
 
 dplayPrompt () {
