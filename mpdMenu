@@ -512,7 +512,21 @@ elif [[ "$backend" == "slmenu" ]]
 fi
 
 
-if [[ "$1" == "-album" ]]; then
+if [[ "$1" == "-h" ]]; then
+    echo "mpdMenu: little dmenu-driven MPD client"
+    echo "Copyright © 2013 - 2014 Rasmus Steinke"
+    echo ""
+    echo "Options"
+    echo "  -h         this help message"
+    echo "  -a         show album dialog"
+    echo "  -t         show track dialog"
+    echo "  -rate      show rating prompt"
+    echo "  -ra        play random album"
+    echo "  -rs        play x random songs (defined with $value"
+    echo "  -show      show currently playing track"
+    echo "  -lrated    add x random tracks with rating >=4"
+
+elif [[ "$1" == "-album" ]]; then
     dplay -a replace
 elif [[ "$1" == "-track" ]]; then
     dplay -t add
@@ -525,7 +539,10 @@ elif [[ "$1" == "-rs" ]]; then
 elif [[ "$1" == "-show" ]]; then
     notify-send "$(mpc current --format '%artist% - %title%')" "$(mpc current --format '\n%date% %album%')"
 elif [[ "$1" == "-lrated" ]]; then
-    for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "$value" | mpc add; done
+    for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "10" | mpc add; done
 else
 dplayPrompt
 fi
+
+
+
