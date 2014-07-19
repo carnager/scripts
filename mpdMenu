@@ -518,8 +518,8 @@ if [[ "$1" == "-h" ]]; then
     echo ""
     echo "Options"
     echo "  -h         this help message"
-    echo "  -a         show album dialog"
-    echo "  -t         show track dialog"
+    echo "  -album     show album dialog"
+    echo "  -track     show track dialog"
     echo "  -rate      show rating prompt"
     echo "  -ra        play random album"
     echo "  -rs        play x random songs (defined with $value"
@@ -539,7 +539,7 @@ elif [[ "$1" == "-rs" ]]; then
 elif [[ "$1" == "-show" ]]; then
     notify-send "$(mpc current --format '%artist% - %title%')" "$(mpc current --format '\n%date% %album%')"
 elif [[ "$1" == "-lrated" ]]; then
-    for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "10" | mpc add; done
+    mpc clear && for ((i=4; i<="5"; i++)); do mpc find comment "$i" | shuf | head -n "10" | mpc add; done && mpc play
 else
 dplayPrompt
 fi
