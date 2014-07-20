@@ -526,7 +526,7 @@ if [[ "$1" == "-h" ]]; then
     echo "  -rate      show rating prompt"
     echo "  -tr        rate current track"
     echo "  -ra        play random album"
-    echo "  -rs        play x random songs (defined with 'value variable')"
+    echo "  -rs        play x random songs (defined with "value" variable)"
     echo "  -show      show currently playing track"
     echo "  -lrated    add x random tracks with rating >=4"
 
