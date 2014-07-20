@@ -69,6 +69,7 @@ searchPrompt () {
         1*) dplaySubPrompt -x ;;
         2*) dplaySubPrompt -a ;;
         3*) dplaySubPrompt -t ;;
+        0*) dplayPrompt
     esac
 }
 
