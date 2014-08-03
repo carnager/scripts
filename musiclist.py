@@ -6,6 +6,7 @@ import re
 import mpd  # pacman -S python2-mpd
 MUSIC_ROOT = '/mnt/wasteland/Audio/Rips'
 RATING_FILE = 'rating.txt'
+max_rating = 5
 def query(c, *items, **conditions):
     if conditions:
         # turn dict into flattened list, e.g.
@@ -65,10 +66,12 @@ def main():
         print('<tr class=\"newartist\"><td rowspan="{0}">{1}</td>'.format(len(albums), artist))
         for i, (date, album) in enumerate(albums):
             rating = get_rating(c, artist, date, album)
-            # templating libraries ftw
+            black_stars = '★' * int(rating)
+            white_stars = '☆' * int(max_rating - rating)
+            # templating libaries ftw
             print("<td>{}</td>".format(date))
             print("<td>{}</td>".format(album))
-            print("<td><font color=\"red\">{}</td>".format(rating))
+            print("<td><font color=\"red\">{}</td>".format(black_stars + white_stars))
             print("</tr>")
     print("</table></div>")
 if __name__ == '__main__':
