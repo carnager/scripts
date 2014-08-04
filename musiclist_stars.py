@@ -74,8 +74,8 @@ def main():
                 output = ''
             else:
                 parts = str(rating).split('/')
-                rate = int(parts[0]); max_rate = int(parts[1]) / 2
-                max_rate = 10 / 2
+                rate = int(parts[0])
+                max_rate = int(parts[1]) / 2
                 output = ''
                 if rate % 2 == 0:
                     rate = int(rate / 2)
