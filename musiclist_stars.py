@@ -1,17 +1,19 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from __future__ import print_function
+#from __future__ import print_function
 import os
 import operator
 import re
 import mpd  # pacman -S python2-mpd
+from functools import reduce
 MUSIC_ROOT = '/mnt/wasteland/Audio/Rips'
 RATING_FILE = 'rating.txt'
 def query(c, *items, **conditions):
     if conditions:
         # turn dict into flattened list, e.g.
         # {k1: v1, k2: v2} -> [k1, v1, k2, v2]
-        cond = reduce(operator.add, conditions.items())
+#        cond = reduce(operator.add, conditions.items())
+        cond = reduce(operator.add, list(conditions.items()))
         results = c.find(*cond)
     else:
         results = c.listallinfo()
@@ -55,10 +57,12 @@ def main():
     if pw is not None:
         c.password(pw)
     print("<html>")
-    print("<head><meta charset=\"utf-8\"/><link rel=\"stylesheet\" href=\"//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css\"><style>body{background:#eee}table{margin:5em auto; max-width:56em; background: white;}</style></head>")
+    print("<head><meta charset=\"utf-8\"/><link rel=\"stylesheet\" href=\"http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css\"><style>body{background:#eee}table{margin:5em auto; max-width:56em; background: white;}</style>")
+    print('<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">')
+    print("</head>")
     print("<body>")
     print("<div class=\"table-responsive\">")
-    print("<table id=\"music\" class=\"table table-bordered\">")
+    print("<table id=\"music\" style=\"white-space: nowrap;\" class=\"table table-bordered\">")
     print("<thead>")
     print("<tr><th>Artist</th><th>Year</th><th>Album</th><th>Rating</th></tr></thead><tbody>")
     for artist in sorted(get_artists(c), key=lambda v: (v.upper(), v[0].islower())):
@@ -69,13 +73,18 @@ def main():
             if rating == '-':
                 output = ''
             else:
-                split = rating.split('/')
-                rate = split[0]
-                max_rate = split[1]
-                black_stars = '★' * int(rate)
-                white_stars = '☆' * (int(max_rate) - int(rate))
-                output = black_stars + white_stars
-
+                parts = str(rating).split('/')
+                rate = int(parts[0]); max_rate = int(parts[1]) / 2
+                max_rate = 10 / 2
+                output = ''
+                if rate % 2 == 0:
+                    rate = int(rate / 2)
+                    output += rate * '<i class="fa fa-star"></i>'
+                else:
+                    rate = float(rate / 2)
+                    first = int(str(rate).split('.')[0])
+                    output += (first * '<i class="fa fa-star"></i>') + '<i class="fa fa-star-half-o"></i>'
+                output += int(max_rate - rate) * '<i class="fa fa-star-o"></i>'
             # templating libaries ftw
             print("<td>{}</td>".format(date))
             print("<td>{}</td>".format(album))
