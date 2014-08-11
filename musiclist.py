@@ -65,10 +65,15 @@ def main():
         print('<tr class=\"newartist\"><td rowspan="{0}">{1}</td>'.format(len(albums), artist))
         for i, (date, album) in enumerate(albums):
             rating = get_rating(c, artist, date, album)
-            # templating libraries ftw
+            split = rating.split(rating, '/')
+            rate = split[0]
+            max_rate = split[1]
+            black_stars = '★' * int(rate)
+            white_stars = '☆' * int(max_rate - rate)
+            # templating libaries ftw
             print("<td>{}</td>".format(date))
             print("<td>{}</td>".format(album))
-            print("<td><font color=\"red\">{}</td>".format(rating))
+            print("<td><font color=\"red\">{}</td>".format(black_stars + white_stars))
             print("</tr>")
     print("</table></div>")
 if __name__ == '__main__':
