@@ -90,6 +90,7 @@ def main():
             print("<td>{}</td>".format(album))
             print("<td><font color=\"black\">{}</td>".format(output))
             print("</tr>")
-    print("</table></div>")
+    print('</tbody>')
+    print("</table></div></body></html>")
 if __name__ == '__main__':
     main()
