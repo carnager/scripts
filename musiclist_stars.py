@@ -37,7 +37,7 @@ def get_rating(c, artist, date, album):
     path = next(r)[0]
     path = os.path.join(MUSIC_ROOT, path)
     path = os.path.dirname(path)
-    if re.search("CD ?\d", path, flags=re.IGNORECASE):
+    if re.search('CD ?\d', path, flags=re.IGNORECASE):
         path = os.path.dirname(path)
     path = os.path.join(path, RATING_FILE)
     try:
@@ -56,18 +56,37 @@ def main():
     c.connect(host, port)
     if pw is not None:
         c.password(pw)
-    print("<html>")
-    print("<head><meta charset=\"utf-8\"/><link rel=\"stylesheet\" href=\"http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css\"><style>body{background:#eee}table{margin:5em auto; max-width:56em; background: white;}</style>")
-    print('<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">')
-    print("</head>")
-    print("<body>")
-    print("<div class=\"table-responsive\">")
-    print("<table id=\"music\" style=\"white-space: nowrap;\" class=\"table table-bordered\">")
-    print("<thead>")
-    print("<tr><th>Artist</th><th>Year</th><th>Album</th><th>Rating</th></tr></thead><tbody>")
+    print('''
+    <html>
+    <head>
+    <meta charset="utf-8"/>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <style>
+        body{background:#eee}
+        table{
+        margin:5em auto;
+        max-width:56em;
+        background: white;
+        }
+    </style>
+    <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+    </head>
+    <body>
+    <div class="table-responsive">
+    <table id="music" style="white-space: nowrap;" class="table table-bordered">
+    <thead>
+    <tr>
+    <th>Artist</th>
+    <th>Year</th>
+    <th>Album</th>
+    <th>Rating</th>
+    </tr>
+    </thead>
+    <tbody>
+    ''')
     for artist in sorted(get_artists(c), key=lambda v: (v.upper(), v[0].islower())):
         albums = sorted(query(c, 'date', 'album', albumartist=artist))
-        print('<tr class=\"newartist\"><td rowspan="{0}">{1}</td>'.format(len(albums), artist))
+        print('<tr class="newartist"><td rowspan="{0}">{1}</td>'.format(len(albums), artist))
         for i, (date, album) in enumerate(albums):
             rating = get_rating(c, artist, date, album)
             if rating == '-':
@@ -86,11 +105,18 @@ def main():
                     output += (first * '<i class="fa fa-star"></i>') + '<i class="fa fa-star-half-o"></i>'
                 output += int(max_rate - rate) * '<i class="fa fa-star-o"></i>'
             # templating libaries ftw
-            print("<td>{}</td>".format(date))
-            print("<td>{}</td>".format(album))
-            print("<td><font color=\"black\">{}</td>".format(output))
-            print("</tr>")
-    print('</tbody>')
-    print("</table></div></body></html>")
+            print('''
+            <td>{date}</td>
+            <td>{album}</td>
+            <td><font color="black">{output}</font></td>
+            </tr>
+            '''.format(date=date, album=album, output=output))
+    print('''
+    </tbody>
+    </table>
+    </div>
+    </body>
+    </html>
+    ''')
 if __name__ == '__main__':
     main()
