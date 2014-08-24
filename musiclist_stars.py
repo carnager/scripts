@@ -3,6 +3,7 @@
 #from __future__ import print_function
 import os
 import operator
+import glob
 import re
 import mpd  # pacman -S python2-mpd
 from functools import reduce
@@ -37,15 +38,25 @@ def get_rating(c, artist, date, album):
     path = next(r)[0]
     path = os.path.join(MUSIC_ROOT, path)
     path = os.path.dirname(path)
+    for file in os.listdir(MUSIC_ROOT):
+        if file.endswith(".ratings"):
+            RATING_FILE=file
+
     if re.search('CD ?\d', path, flags=re.IGNORECASE):
         path = os.path.dirname(path)
     path = os.path.join(path, RATING_FILE)
     try:
         with(open(path)) as f:
-            rating = f.readline().strip()
-            return rating
+            line = f.readline().strip()
+            while line:
+                if re.match("album_rating", line):
+                    return line[line.find("=")+1:]
+                line = f.readline()
+            return "-"
     except IOError:
         return "-"
+
+
 def main():
     c = mpd.MPDClient()
     host = os.environ.get('MPD_HOST', 'localhost')
