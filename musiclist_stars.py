@@ -52,12 +52,12 @@ def get_rating(c, artist, date, album):
         path = os.path.dirname(path)
 
     for file in os.listdir(path):
-        if file.endswith(".ratings"):
+        if file.endswith(".albumrating"):
             path = os.path.join(path, file)
             with(open(path)) as f:
                 line = f.readline().strip()
                 while line:
-                    if re.match("album_rating", line):
+                    if re.match("albumrating", line):
                         return line[line.find("=")+1:]
                     line = f.readline()
             return "-"
