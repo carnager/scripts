@@ -10,8 +10,6 @@ import re
 import mpd  # pacman -S python2-mpd
 from functools import reduce
 
-MUSIC_ROOT = '/mnt/wasteland/Audio/Rips'
-
 # Queries MPD for items
 def query(c, *items, **conditions):
     if conditions:
@@ -44,23 +42,12 @@ def get_artists(c):
 
 def get_rating(c, artist, date, album):
     r = query(c, 'file', albumartist=artist, date=date, album=album)
-    path = next(r)[0]
-    path = os.path.join(MUSIC_ROOT, path)
-    path = os.path.dirname(path)
-    # CD divider dirs do not hold the ratings, their parent does.
-    if re.search('CD ?\d', path, flags=re.IGNORECASE):
-        path = os.path.dirname(path)
-
-    for file in os.listdir(path):
-        if file.endswith(".albumrating"):
-            path = os.path.join(path, file)
-            with(open(path)) as f:
-                line = f.readline().strip()
-                while line:
-                    if re.match("albumrating", line):
-                        return line[line.find("=")+1:]
-                    line = f.readline()
-            return "-"
+    try:
+        rating = c.sticker_get('song', list(r)[0][0], 'albumrating')
+    except mpd.CommandError:
+        rating = "-"
+    return rating
+    print(rating)
 
 def main():
     c = mpd.MPDClient()
@@ -111,14 +98,14 @@ def main():
             if rating == '-' or rating == None:
                 output = ''
             else:
-                parts = str(rating).split('/')
+                parts = str(rating).split(' ')
                 if not parts[0].isdigit():
                     print('Error: rating number isn\'nt numeric: {0}'.format(rating))
                     print('Occured at {0}--{1}--{2}'.format(artist, album, date))
                     sys.exit(1)
 
                 rate = int(parts[0])
-                max_rate = int(parts[1]) / 2
+                max_rate = 5
                 output = ''
                 if rate % 2 == 0:
                     rate = int(rate / 2)
