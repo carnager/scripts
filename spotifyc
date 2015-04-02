@@ -1,0 +1,77 @@
+#!/bin/bash
+
+sc () { echo $@ | socat - UNIX-CONNECT:/tmp/spotifyd 2>/dev/null; }
+export PULSE_LATENCY_MSEC=60
+if [[ -n $(pidof spotifyd) ]]; then
+    echo "spotifyd already running"
+else
+    echo "starting spotifyd"
+    spotifyd
+fi
+
+mainMenu () {
+    menu=("0: Exit spotifyc"
+          "---"
+          "1. Add Song to Queue"
+          "2. Show Queue"
+          "---"
+          "3. Load Playlist"
+          "---"
+          "4. Toggle Playback"
+          "5. Next"
+          "6. Previous"
+          "7. Clear Queue")
+
+    prompt() {
+        printf "%s\n" "$@" | rofi -dmenu -p "Select > "
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        0:*) exit ;;
+        1.*) search ;;
+        2.*) showQueue ;;
+        3.*) loadPlaylist ;;
+        4.*) sc pause && spotifyc ;;
+        5.*) sc next && spotifyc ;;
+        6.*) sc prev && spotifyc ;;
+        7.*) sc qclear && spotifyc ;;
+          *) exit
+    esac
+}
+
+search () {
+    query="$(echo "Enter Search Term" | rofi -dmenu -p "> ")"
+    list="$(sc search ${query})"
+    songlist="$(echo -e "Add all\n---\n$(echo "$list" | column -t -s '|'))" | rofi -dmenu -p "Select Song to Add to Queue > ")"
+    if [[ "$songlist" == "Add all" ]]; then
+        for i in $(echo "$list" | awk '{ print $1 }'); do
+            sc qadd "$i"
+        done
+    else
+        sc qadd "$(echo "$songlist" | awk '{ print $1 }')"
+    fi
+    if [[ -z $(sc qlist) ]]; then
+        sc play 0
+    else
+        echo ""
+    fi
+    spotifyc
+}
+
+showQueue () {
+    if [[ -n $(sc qlist) ]]; then
+        songlist=$(sc qlist | column -t -s '|' | rofi -dmenu -p "Current Queue > ")
+        sc play "$songlist" | awk '{ print $1 }'
+    else
+        echo "Queue is empty" | rofi -dmenu -p "> "
+    fi
+    spotifyc
+}
+
+loadPlaylist () {
+    list="$(sc pl | column -t -s '|' | rofi -dmenu -p "Chose Playlist > ")"
+    sc qaddpl "$list" | awk '{ print $1 }'
+    spotifyc
+}
+
+mainMenu
