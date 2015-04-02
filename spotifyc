@@ -12,7 +12,7 @@ fi
 mainMenu () {
     menu=("0: Exit spotifyc"
           "---"
-          "1. Add Song to Queue"
+          "1. Add Song(s) to Queue"
           "2. Show Queue"
           "---"
           "3. Load Playlist"
