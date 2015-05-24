@@ -1,0 +1,68 @@
+#!/bin/bash
+
+root="Rasi"
+
+shopt -s nullglob globstar
+
+list_passwords() {
+    basedir=~/.password-store/
+    passwords=( ~/.password-store/**/*.gpg )
+    for password in "${passwords[@]}"
+    do
+        filename="${password#$basedir}"
+        filename="${filename%.gpg}"
+        echo $filename
+    done
+}
+
+xdotool_command() {
+     echo "type "
+     pass "$selected_password" | head -1
+}
+
+mainMenu () {
+selected_password="$(list_passwords 2>/dev/null| rofi -dmenu)"
+show=$(echo -e "Pass\nUser\nUser>Pass\n---\nOnline Banking" | rofi -dmenu)
+
+if [ -n "$selected_password" ]
+then
+    if [[ $show == "Pass" ]]; then
+        password=$(pass "$selected_password" | head -1)
+        xdotool type "$password"
+    elif [[ $show == "User" ]]; then
+        user=$(pass "$selected_password" | awk -F ': ' 'NR == 2 { print $2 }')
+        xdotool type "$user"
+    elif [[ $show == "User>Pass" ]]; then
+        password=$(pass "$selected_password" | head -1)
+        user=$(pass "$selected_password" | awk -F ': ' 'NR == 2 { print $2 }')
+        xdotool type "$user"
+        xdotool keydown Tab && xdotool keyup Tab
+        xdotool type "$password"
+    elif [[ $show == "Online Banking" ]]; then
+        password=$(pass "$selected_password" | head -1)
+        branch=$(pass "$selected_password" | awk -F ': ' 'NR == 2 { print $2 }')
+        account=$(pass "$selected_password" | awk -F ': ' 'NR == 4 { print $2 }')
+        sub=$(pass "$selected_password" | awk -F ': ' 'NR == 5 { print $2 }')
+        xdotool type "${branch}"
+        xdotool type "${account}"
+        xdotool type "${password}"
+        xdotool keydown Shift && xdotool keydown Tab && xdotool keyup Tab && xdotool keyup Shift
+        xdotool type "${sub}"
+    fi
+fi
+}
+
+insertPass () {
+    domain=$(echo "$1" | sed -e 's|^[^/]*//||' -e 's|/.*$||')
+    pass=$(echo -e "Password for site "$domain"" | rofi -dmenu -p "Enter Password > ")
+    user=$(echo -e "Username for site "$domain"" | rofi -dmenu -p "Enter User > ")
+    cd $HOME/.password-store/"${root}"
+    group=$(ls -d */ | rofi -dmenu -p "Choose Group")
+    pass insert -m -f "${root}"/"$group"/"$domain" < <(echo -e "${pass}\nUser: ${user}\nUrl: ${domain}")
+}
+
+if [[ $1 == "insert" ]]; then
+    insertPass $2
+else
+    mainMenu
+fi

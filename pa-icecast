@@ -1,0 +1,9 @@
+#!/bin/sh
+
+host=$(cat $HOME/.icecast_cred | grep host | cut -d '=' -f2)
+pass=$(cat $HOME/.icecast_cred | grep pass | cut -d '=' -f2)
+port=$(cat $HOME/.icecast_cred | grep port | cut -d '=' -f2)
+
+#pactl load-module module-null-sink sink_name=Icecast sink_properties=device.description=Icecast
+#pactl load-module module-combine sink_name=Icecast sink_properties=device.description=Icecast slaves="`cat ~/.config/pulse/*-sink`,null"
+gst-launch-1.0 pulsesrc device=Icecast.monitor ! audioconvert ! audio/x-raw ! opusenc bitrate=128000 ! oggmux ! shout2send streamname=spotishare description="Public spotifyd broadcasting" ip=$host port=$port password=$pass mount=spotishare.ogg

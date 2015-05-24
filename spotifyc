@@ -10,17 +10,16 @@ else
 fi
 
 mainMenu () {
-    menu=("0: Exit spotifyc"
+          menu=("1. Search And Add Song(s)"
+          "2. Add Songs by Spotify URI"
+          "3. Show Queue"
           "---"
-          "1. Add Song(s) to Queue"
-          "2. Show Queue"
+          "4. Load Playlist"
           "---"
-          "3. Load Playlist"
-          "---"
-          "4. Toggle Playback"
-          "5. Next"
-          "6. Previous"
-          "7. Clear Queue")
+          "5. Toggle Playback"
+          "6. Next"
+          "7. Previous"
+          "8. Clear Queue")
 
     prompt() {
         printf "%s\n" "$@" | rofi -dmenu -p "Select > "
@@ -29,12 +28,13 @@ mainMenu () {
     case "$(prompt "${menu[@]}")" in
         0:*) exit ;;
         1.*) search ;;
-        2.*) showQueue ;;
-        3.*) loadPlaylist ;;
-        4.*) sc pause && spotifyc ;;
-        5.*) sc next && spotifyc ;;
-        6.*) sc prev && spotifyc ;;
-        7.*) sc qclear && spotifyc ;;
+        2.*) addURI ;;
+        3.*) showQueue ;;
+        4.*) loadPlaylist ;;
+        5.*) sc pause && spotifyc ;;
+        6.*) sc next && spotifyc ;;
+        7.*) sc prev && spotifyc ;;
+        8.*) sc qclear && spotifyc ;;
           *) exit
     esac
 }
@@ -55,6 +55,12 @@ search () {
     else
         echo ""
     fi
+    spotifyc
+}
+
+addURI () {
+    menu=$(echo "Paste Spotify URI" | rofi -dmenu -p "> ")
+    sc link "$menu"
     spotifyc
 }
 

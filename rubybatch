@@ -1,0 +1,253 @@
+#!/usr/bin/env ruby
+require 'fileutils'
+require 'optparse'
+require 'shellwords'
+
+options = {
+  playlists: []
+}
+
+PROFILES = {
+  opus_vbr_128: {format: 'opus', args: '-c opus -B 128'},
+  mp3_v2: {format: 'mp3', args: '-c lame -q 2'},
+  mp3_v3: {format: 'mp3', args: '-c lame -q 3'},
+  mp3_v4: {format: 'mp3', args: '-c lame -q 4'},
+  vorbis_q6: {format: 'ogg', args: '-c vorbis -q 6'}
+}
+
+parser = OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename(__FILE__)} <options> <source> <destination>"
+
+  opts.separator("\nRequired options:")
+
+  opts.on(
+    '-s SOURCE', '--source SOURCE',
+    'The source directory of files to be transcoded',
+  ) do |source|
+    options[:source] = File.absolute_path(source)
+  end
+
+  opts.on(
+    '-d DESTINATION', '--dest DESTINATION',
+    'The destination directory for transcoded files.',
+    'Note that paths relative to SOURCE are preserved'
+  ) do |dest|
+    options[:destination] = File.absolute_path(dest)
+  end
+
+  opts.on(
+    '-p PROFILE', '--profile PROFILE',
+    PROFILES.keys,
+    "Profile to use for encoding.",
+    "Possible values: #{PROFILES.keys.map(&:to_s).join(', ')}"
+  ) do |profile|
+    options[:profile] = PROFILES[profile]
+  end
+
+  opts.on(
+    '-i PATTERN', '--include PATTERN',
+    "Encode files matching PATTERN. (e.g. *.flag)",
+    "Use {} to define multiple patterns. (e.g. *.{flac,alac})",
+    "Alternatively set a path to a m3u playlist file or simply a file",
+    "containing file names to include them.",
+    "Use -i repeatedly to define multiple files or files and patterns"
+  ) do |pattern|
+    if File.exist?(pattern) && File.extname(pattern) == '.m3u'
+      options[:playlists] << pattern
+    else
+      options[:include_pattern] = pattern
+    end
+  end
+
+  opts.separator("Optional:")
+
+  opts.on(
+    '-e PATTERN', '--exclude PATTERN',
+    "Exclude files matching PATTERN. (e.g. *.log)",
+    "Takes predecence over --include PATTERN",
+    "Use {} to define multiple patterns. (e.g. *.{log,cue})"
+  ) do |pattern|
+    options[:exclude_pattern] = pattern
+  end
+
+  opts.on(
+    '-c PATTERN', '--copy PATTERN',
+    "Copy files matching PATTERN. (e.g. *.cue)",
+    "Use {} to define multiple patterns. (e.g. {*.cue,cover.jpg})"
+  ) do |pattern|
+    options[:copy_pattern] = pattern
+  end
+
+  opts.on(
+    '-j JOBS', '--jobs JOBS',
+    Integer,
+    "Dispatch JOBS transcoding processes (number of available cores by default)"
+  ) do |jobs|
+    options[:jobs] = jobs
+  end
+
+  opts.on('-y', 'Overwrite output files (skips by default)') do
+    options[:overwrite] = true
+  end
+
+  opts.on(
+    '--delete',
+    'Delete all files not transcoded or copied from destination',
+    'Use with caution! Try with --dry-run first'
+  ) do
+    options[:delete] = true
+  end
+
+  opts.on(
+    '--dry-run',
+    "Don't actually transcode or delete files, only display output",
+  ) do
+    options[:dry_run] = true
+  end
+
+  opts.on('-h', '--help', 'Show this message') do
+    puts opts
+    exit
+  end
+end
+
+parser.parse!
+required_opts = [:source, :destination, :profile, :include_pattern]
+required_opts.each do |opt|
+  next if options[opt]
+  next if opt == :include_pattern && !options[:playlists].empty?
+  $stderr.puts "Missing required option #{opt}\n"
+  $stderr.puts parser.help
+  exit 1
+end
+
+class BatchProcessor
+  def initialize(source, destination)
+    [source, destination].each do |path|
+      unless Dir.exist?(path)
+        raise ArgumentError.new("#{path}: no such directory")
+      end
+    end
+    @source = source
+    @destination = destination
+  end
+end
+
+options[:profile][:args] << ' -k' unless options[:overwrite]
+
+source_files = options[:include_pattern] ?
+  Dir[File.join(options[:source], '**', options[:include_pattern])] : []
+
+options[:playlists].each do |pl|
+  File.foreach(pl) do |file|
+    next if file =~ /^\s*#/ # metadata
+    file.strip!
+    file = File.absolute_path(file) ?
+      file : File.join(options[:source], file)
+    unless File.exist?(file)
+      $stderr.puts "File #{file} doesn't exist or isn't a local file. Skipping."
+      next
+    end
+    unless file =~ /^#{options[:source]}/
+      $stderr.puts "File #{file} is outside source directory. Skipping."
+      next
+    end
+    source_files << file
+  end
+end
+
+source_files.uniq!
+
+excluded_files = options[:exclude_pattern] ?
+  Dir[File.join(options[:source], '**', options[:exclude_pattern])] : []
+
+copied_files = options[:copy_pattern] ?
+  Dir[File.join(options[:source], '**', options[:copy_pattern])] : []
+
+[source_files, copied_files, excluded_files].each do |files|
+  files.map!(&File.method(:absolute_path))
+end
+
+source_files -= excluded_files
+
+source_dirs = source_files.map(&File.method(:dirname)).uniq!
+copied_files.select! do |file|
+  source_dirs.include?(File.dirname(file))
+end
+
+copied_files -= excluded_files
+source_files -= copied_files
+
+chdir = lambda do |file|
+  file.sub(
+    /^#{Regexp.escape(options[:source])}/,
+    options[:destination]
+  )
+end
+
+chext = lambda do |file|
+  file.sub(
+    /#{Regexp.escape(File.extname(file))}$/,
+    ".#{options[:profile][:format]}"
+  )
+end
+
+cut_dir = lambda do |file|
+  file.sub(/^#{Regexp.escape(options[:source])}\/?/, '')
+end
+
+escape = lambda do |file|
+  Shellwords.escape(file)
+end
+
+dest_files = source_files.map(&chdir).map(&chext)
+
+dest_dirs = (dest_files + copied_files).map(&File.method(:dirname)).uniq
+dest_dirs.reject(&Dir.method(:exist?)).each(&FileUtils.method(:mkdir_p))
+
+copied_files.each do |file|
+  FileUtils.cp(file, chdir.call(file))
+end
+
+if options[:delete]
+  puts "Cleaning up files at destination"
+  files_to_delete = Dir[File.join(options[:destination], '**', '*')]
+  files_to_delete.reject!(&File.method(:directory?))
+  files_to_delete -= copied_files.map(&chdir)
+  files_to_delete -= dest_files
+  files_to_delete.each(&File.method(:delete)) unless options[:dry_run]
+  files_to_delete.each { |file| puts "removed #{file}" }
+  dirs = Dir[File.join(options[:destination], '**', '*/')]
+
+  print "Cleaning up empty directories"
+  puts options[:dry_run] ? " (Cannot simulate this in dry run)" : ''
+  FileUtils.rmdir(dirs, parents: true)
+end
+
+
+puts "Starting transcode..."
+
+FileUtils.cd(options[:source]) do
+  caudec_cmd = ["caudec"]
+  caudec_cmd << "-n #{options[:jobs]}" if options[:jobs]
+  caudec_cmd << options[:profile][:args]
+  caudec_cmd << "-P #{escape.call(options[:destination])}"
+  puts [*caudec_cmd, '[ FILES ]'].join(' ')
+
+  source_files.group_by(&File.method(:dirname)).each do |_, files_for_dir|
+    files_for_dir.each_slice(100) do |files|
+      system(
+        (caudec_cmd + files.map(&cut_dir).map(&escape)).join(' ')
+      ) unless options[:dry_run]
+
+      if $?.to_i != 0 && !options[:dry_run]
+        $stderr.print "Caudec produced errors. Continue? (y/N): "
+        if $stdin.gets.chomp !~ /^y$/i
+          exit($?.to_i)
+        end
+      end
+    end
+  end
+end
+
+puts "Done!"

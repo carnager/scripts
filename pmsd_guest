@@ -1,0 +1,55 @@
+#!/bin/bash
+
+#sc () { echo $@ | socat - UNIX-CONNECT:/tmp/spotifyd 2>/dev/null; }
+sc () { echo $@ | nc 53280.ignorelist.com 13337; }
+
+if [[ -n $(curl -s http://radio.53280.de 2>/dev/null | grep spotishare) ]]; then
+    if [[ "$(mpc current)" == "http://radio.53280.de/spotishare.ogg" ]]; then
+        mpc play
+        echo "Stream already playing"
+    else
+        mpc clear
+        mpc add "http://nerd:radio@radio.53280.de/spotishare.ogg"
+        mpc play
+    fi
+else
+    echo "Streaming Server not online"
+fi
+
+mainMenu () {
+    menu=("0: Exit pmsd"
+          "---"
+          "1. Add Song to Queue"
+          "2. Show Queue"
+          "3. Show current Track")
+
+    prompt() {
+        printf "%s\n" "$@" | rofi -dmenu -p "pmsd:"
+    }
+
+    case "$(prompt "${menu[@]}")" in
+        0:*) exit ;;
+        1.*) search ;;
+        2.*) showQueue ;;
+        3.*) showSong ;;
+          *) exit
+    esac
+}
+
+search () {
+    query="$(echo "Enter Search Term" | rofi -dmenu)"
+    songlist="$(sc search ${query} | rofi -dmenu -p "Select Song to Add to Queue >")"
+    sc qadd "$(echo "$songlist" | awk -F " | " '{ print $1 }')"
+}
+
+showQueue () {
+    sc qlist | rofi -dmenu -p "Current Queue > "
+    pmsd
+}
+
+showSong () {
+    sc cur_playing | rofi -dmenu -p "Current Song > "
+    pmsd
+}
+
+mainMenu

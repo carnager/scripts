@@ -1,0 +1,142 @@
+#!/bin/bash
+
+source $HOME/.config/kava/config
+
+index_adv () {
+    if ((index < ( nelem - 1 ))); then
+        ((index++))
+        else
+            index=0
+    fi
+}
+
+inarray() { local n=$1 h; shift; for h; do [[ $n = "$h" ]] && return; done; return 1; }
+
+wallpaper () {
+    echo "Cover for \""$(mpc current -f "%$artist% - %album%")"\" found, setting wallpaper..."
+    cp cover.png /tmp/cover.png
+    mogrify -resize "$size" -bordercolor snow -background black +polaroid /tmp/cover.png
+    convert -size "$res" "$image_temp" -page ${coordinates[$index]} /tmp/cover.png -layers flatten "$wallpaper"
+    feh --bg-scale "$wallpaper"
+    cp "$wallpaper" "$image_temp"
+}
+
+main () {
+local index=0
+local nelem="${#coordinates[@]}"
+
+feh --bg-scale "$image"
+cp "$image" $HOME/.config/kava/wally_temp.jpg
+image_temp="$HOME/.config/kava/wally_temp.jpg"
+
+
+while true; do
+        if [[ $stopped == true ]]; then
+            export current="$current"
+            export stopped=false
+        else
+        current="$(mpc current --format "%$artist% - %album%")"
+        fi
+        if [[ "$artist" == "albumartist" ]]; then
+            found=0; for i in "${various[@]}"; do
+            if [[ $i = "$(mpc current --format %"$artist"%)" ]]; then
+                export current="Various Artists - $(mpc current --format %album%)"; export VA=true; break; fi; done
+#            inarray "$(mpc current --format %"$artist"%)" "${array[@]}"
+        fi
+        mpc idle player>/dev/null 2>&1
+        sleep 1
+        if [[ -z $(mpc current) ]]; then
+            export stopped=true
+        elif [[ $(mpc current --format "%$artist% - %album%") != "$current" ]]; then
+            dir="$(dirname "$(mpc current --format %file%)")"
+            cd "$mpdpath"/"$dir"
+
+            if [[ -a cover.png ]]; then
+                wallpaper
+                index_adv
+            elif [[ -a folder.jpg ]]; then
+                rm -f folder.jpg
+                echo "Cover for \""$(mpc current -f "%$artist% - %album%")"\" not found, trying to download..."
+                getCover
+            elif [[ -a cover.jpg ]]; then
+                convert cover.jpg cover.png
+                rm -f cover.jpg
+                wallpaper
+                index_adv
+            else
+                echo "Cover for \""$(mpc current -f "%$artist% - %album%")"\" not found, trying to download..."
+                getCover
+            fi
+        fi
+done
+}
+
+getCover () {
+        if [[ $1 == "noset" ]]; then
+            if [[ $VA == true ]]; then
+                cover=$(get-cover "Various Artists" "$(mpc current -f %album%)")
+            else
+                cover=$(get-cover "$(mpc current -f %"$artist"%)" "$(mpc current -f %album%)")
+            fi
+        cd "$mpdpath"/"$dir"
+        if [[ $cover == "Fetch error." ]]; then
+            echo "...could not download cover for \""$(mpc current -f "%$artist% - %album%")"\", skipping..."
+        else
+            echo "...found cover, saving"
+            wget "$cover" -O cover>/dev/null 2>&1
+        fi
+        if [[ $(file --mime-type cover | awk '{ print $NF }') == "image/png" ]]; then
+            mv cover cover.png
+        elif [[ $(file --mime-type cover | awk '{ print $NF }') == "image/jpeg" ]]; then
+            mv cover cover.jpg
+        fi
+    else
+        if [[ $VA == true ]]; then
+            cover=$(get-cover "Various Artists" "$(mpc current -f %album%)")
+        else
+            cover=$(get-cover "$(mpc current -f %"$artist"%)" "$(mpc current -f %album%)")
+        fi
+        cd "$mpdpath"/"$dir"
+        if [[ $cover != "Fetch error." ]]; then
+            wget "$cover" -O cover>/dev/null 2>&1
+        fi
+        if [[ $(file --mime-type cover | awk '{ print $NF }') == "image/png" ]]; then
+            mv cover cover.png
+            wallpaper
+            index_adv
+        elif [[ $(file --mime-type cover | awk '{ print $NF }') == "image/jpeg" ]]; then
+            mv cover cover.jpg
+            convert cover.jpg cover.png
+            rm -f cover.jpg
+            wallpaper
+            index_adv
+        fi
+    fi
+}
+
+reset () {
+    if [[ -z $(mpc current) ]]; then
+        echo "No song playing, skipping"
+    else
+        dir="$(dirname "$(mpc current --format %file%)")"
+        cd "$mpdpath"/"$dir"
+        rm -f folder.jpg
+        mv cover.png cover.png.bak>/dev/null 2>&1
+        mv cover.jpg cover.jpg.bak>/dev/null 2>&1
+        getCover noset
+        if [[ -a cover.png || cover.jpg ]]; then
+            rm -f cover.png.bak
+            rm -f cover.jpg.bak
+        else
+            mv cover.png.bak cover.png
+            mv cover.jpg.bak cover.jpg
+        fi
+    fi
+}
+
+if [[ $1 == reset ]]; then
+    reset
+else
+    main
+fi
+

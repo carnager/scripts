@@ -1,16 +1,38 @@
 #!/bin/bash
-cd "$1"
-if [ "$3" = opus ]
-then export CODEC="opus -q 128"
-elif [ "$3" = ogg ]
-then export CODEC="ogg -q 6"
-elif [ "$3" = mp3 ]
-then export CODEC="mp3"
-elif [ "$3" = flac ]
-then export CODEC="flac"
+
+# Set codec options
+if [ "$3" = opus ]; then
+    export CODEC="opus -q 128"
+elif [ "$3" = ogg ]; then
+    export CODEC="ogg -q 6"
+elif [ "$3" = mp3 ]; then
+    export CODEC="mp3"
+elif [ "$3" = flac ]; then
+    export CODEC="flac"
 else
-echo "Syntax: batchenc INPUTDIR OUTPUTDIR {opus,ogg,flac,mp3}"
-:
-exit
+    echo "Syntax: batchenc INPUTDIR OUTPUTDIR {opus,ogg,flac,mp3}"
+    exit
 fi
+
+
+# create directory lists
+cd "$1"
+sourcedirs="$(find . -type d -name "*" -print0 | while read -d $'\0' a; do echo "$a"; done)"
+cd "$2"
+targetdirs="$(find . -type d -name "*" -print0 | while read -d $'\0' a; do echo "$a"; done)"
+
+
+# clean up target directory
+printf %s "$targetdirs" | while read -r line; do
+cd "$1"
+if [[ ! -d "${line}" ]]; then
+    echo ""${line}" does not exist, deleting..."
+    cd "$2"
+    rm -fr "${line}"
+fi
+done
+
+
+# mirror missing directories and transcode
+cd "$1"
 find * -type f -name '*.flac' -exec dirname '{}' ';' | sort -u | while read d; echo "$d"; do caudec -P "$2" -k -s -c $CODEC "$d"/*.flac; done
