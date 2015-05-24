@@ -31,7 +31,7 @@ fi
 printf %s "$targetdirs" | while read -r line; do
     cd "$1"
     if [[ ! -d "${line}" ]]; then
-        echo ""${line}" does not exist, deleting..."
+        echo ""${line}" not in source tree, deleting..."
         cd "$2"
         rm -fr "${line}"
     fi
