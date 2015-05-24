@@ -13,14 +13,26 @@ else
     echo "Syntax: batchenc INPUTDIR OUTPUTDIR {opus,ogg,flac,mp3}"
     exit
 fi
+read -p "Source directory is \""$1"\". Is this correct? > " yn
+case $yn in
+    [Yy]* ) : ;;
+    [Nn]* ) exit ;;
+    * ) echo "Please answer yes or no.";;
+esac
+
+read -p "Target directory is \""$2"\". Is this correct? > " yn
+case $yn in
+    [Yy]* ) : ;;
+    [Nn]* ) exit ;;
+    * ) echo "Please answer yes or no.";;
+esac
 
 
 # create directory lists
 cd "$1"
-sourcedirs="$(find . -type d -name "*" -print0 | while read -d $'\0' a; do echo "$a"; done)"
+sourcedirs="$(find . -type d -name "*")"
 cd "$2"
-targetdirs="$(find . -type d -name "*" -print0 | while read -d $'\0' a; do echo "$a"; done)"
-
+targetdirs="$(find . -type d -name "*")"
 
 # clean up target directory
 if [[ "$sourcedirs" == "$targetdirs" ]]; then
