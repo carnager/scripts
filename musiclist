@@ -34,11 +34,9 @@ def reduceToFstElm(maybeList):
     return maybeList[0] if isinstance(maybeList, list) else maybeList
 
 def createAlbumsList(tracks):
-    def gp(t):
-        return (t['album'], t['albumartist'], t['date'])
-        ks = ['date', 'albumartist', 'album']
-        for t in tracks:
-            t.update([(k, reduceToFstElm(v)) for (k, v) in t.items() if k in ks])
+    ks = ['date', 'albumartist', 'album']
+    for t in tracks:
+        t.update([(k, reduceToFstElm(v)) for (k, v) in t.items() if k in ks])
     return tracks
 
 alist=client.search('filename', " ")
