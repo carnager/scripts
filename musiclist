@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-import os
+from os import environ as environ
 from pprint import pprint as pp
 from itertools import groupby
+import numpy as np
 import mpd
 
 client = mpd.MPDClient()
@@ -12,8 +13,8 @@ mpd_host = 'localhost'
 mpd_port = '6600'
 mpd_pass = ''
 
-if 'MPD_HOST' in os.environ:
-    mpd_connection = os.environ['MPD_HOST'].split('@')
+if 'MPD_HOST' in environ:
+    mpd_connection = environ['MPD_HOST'].split('@')
     if len(mpd_connection) == 1:
         mpd_host = mpd_connection[0]
     elif len(mpd_connection) == 2:
@@ -22,8 +23,8 @@ if 'MPD_HOST' in os.environ:
     else:
         print('Unable to parse MPD_HOST, using defatdts')
 
-if 'MPD_PORT' in os.environ:
-    mpd_port = os.environ['MPD_PORT']
+if 'MPD_PORT' in environ:
+    mpd_port = environ['MPD_PORT']
 
 client.connect(mpd_host, mpd_port)
 if mpd_pass:
@@ -82,11 +83,13 @@ print('''
 <tbody>
 ''')
 
+byAlbum = lambda t: t['album']
 byArtist = lambda t: t['artist']
-for a, ts in groupby(sorted(newlist, key=byArtist), key=byArtist):
-    albums = list(ts)
+for artist, albs in groupby(sorted(newlist, key=byArtist), key=byArtist):
+    albs = [list(albs)[0] for alb, albs in groupby(albs, key=byAlbum)]
+    albums = list(albs)
     rowspan=len(albums)
-    print("<tr class=\"newartist\"><td rowspan=\""+str(rowspan)+"\">"+a+"</td>")
+    print("<tr class=\"newartist\"><td rowspan=\""+str(rowspan)+"\">"+artist+"</td>")
     for x in albums:
         if x['rating'] == '-' or x['rating'] == None:
             output = ''
@@ -110,6 +113,7 @@ for a, ts in groupby(sorted(newlist, key=byArtist), key=byArtist):
         print("    <td>"+x['album']+"</td>")
         print("    <td>"+output+"</td>")
         print("    </tr>")
+        album=x['album']
 print("</tr></table></body></html>")
 
 
