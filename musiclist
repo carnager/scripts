@@ -1,139 +1,121 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
-#from __future__ import print_function
-import sys
 import os
-import operator
-import glob
-import re
-import mpd  # pacman -S python2-mpd
-from functools import reduce
+from pprint import pprint as pp
+from itertools import groupby
+import mpd
 
-# Queries MPD for items
-def query(c, *items, **conditions):
-    if conditions:
-        # turn dict into flattened list, e.g.
-        # {k1: v1, k2: v2} -> [k1, v1, k2, v2]
-#       cond = reduce(operator.add, conditions.items())
-        cond = reduce(operator.add, list(conditions.items()))
-        results = c.find(*cond)
+client = mpd.MPDClient()
+
+
+mpd_host = 'localhost'
+mpd_port = '6600'
+mpd_pass = ''
+
+if 'MPD_HOST' in os.environ:
+    mpd_connection = os.environ['MPD_HOST'].split('@')
+    if len(mpd_connection) == 1:
+        mpd_host = mpd_connection[0]
+    elif len(mpd_connection) == 2:
+        mpd_host = mpd_connection[1]
+        mpd_pass = mpd_connection[0]
     else:
-        results = c.listallinfo()
+        print('Unable to parse MPD_HOST, using defatdts')
 
-    yielded = set()
-    for r in results:
-        d = []
-        for i in items:
-            it = r.get(i)
-            if isinstance(it, list):
-                it = it[0]
+if 'MPD_PORT' in os.environ:
+    mpd_port = os.environ['MPD_PORT']
 
-            d.append(it)
+client.connect(mpd_host, mpd_port)
+if mpd_pass:
+    client.password(mpd_pass)
 
-        d = tuple(d)
-        if all(d) and d not in yielded:
-            yield d
-        yielded.add(d)
+def reduceToFstElm(maybeList):
+    return maybeList[0] if isinstance(maybeList, list) else maybeList
 
-def get_artists(c):
-    a = [r[0] for r in query(c, 'albumartist')]
-    return a
+def createAlbumsList(tracks):
+    def gp(t):
+        return (t['album'], t['albumartist'], t['date'])
+        ks = ['date', 'albumartist', 'album']
+        for t in tracks:
+            t.update([(k, reduceToFstElm(v)) for (k, v) in t.items() if k in ks])
+    return tracks
 
-def get_rating(c, artist, date, album):
-    r = query(c, 'file', albumartist=artist, date=date, album=album)
-    try:
-        rating = c.sticker_get('song', list(r)[0][0], 'albumrating')
-    except mpd.CommandError:
-        rating = "-"
-    return rating
-    print(rating)
+alist=client.search('filename', " ")
+albumlist=createAlbumsList(alist)
+newlist = []
+for album in albumlist:
+    if album['track'] == '1':
+        try:
+            rating = client.sticker_get('song', album['file'], 'albumrating')
+        except mpd.CommandError:
+            rating = "-"
+        album['rating'] = rating
+        entry={'artist': album['albumartist'], 'album': album['album'], 'date': album['date'], 'rating': album['rating']}
+        newlist.append(entry)
 
-def main():
-    c = mpd.MPDClient()
-    host = os.environ.get('MPD_HOST', 'localhost')
-    port = os.environ.get('MPD_PORT', '6600')
-    pw = None
-    if "@" in host:
-        pw, host = host.split("@")
+print('''
+<html>
+<head>
+<meta charset="utf-8"/>
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<style>
+        body{background:#eee}
+        table{
+        margin:5em auto;
+        max-width:56em;
+        background: white;
+        }
+</style>
+<link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="table-responsive">
+<table id="music" style="white-space: nowrap;" class="table table-bordered">
+<thead>
+<tr>
+<th>Artist</th>
+<th>Year</th>
+<th>Album</th>
+<th>Rating</th>
+</tr>
+</thead>
+<tbody>
+''')
 
-    c.connect(host, port)
-    if pw is not None:
-        c.password(pw)
+byArtist = lambda t: t['artist']
+for a, ts in groupby(sorted(newlist, key=byArtist), key=byArtist):
+    albums = list(ts)
+    rowspan=len(albums)
+    print("<tr class=\"newartist\"><td rowspan=\""+str(rowspan)+"\">"+a+"</td>")
+    for x in albums:
+        if x['rating'] == '-' or x['rating'] == None:
+            output = ''
+        else:
+            parts = str(x['rating']).split(' ')
 
-    print('''
-    <html>
-    <head>
-    <meta charset="utf-8"/>
-    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-    <style>
-            body{background:#eee}
-            table{
-            margin:5em auto;
-            max-width:56em;
-            background: white;
-            }
-    </style>
-    <link href="http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
-    </head>
-    <body>
-    <div class="table-responsive">
-    <table id="music" style="white-space: nowrap;" class="table table-bordered">
-    <thead>
-    <tr>
-    <th>Artist</th>
-    <th>Year</th>
-    <th>Album</th>
-    <th>Rating</th>
-    </tr>
-    </thead>
-    <tbody>
-    ''')
-
-    for artist in sorted(get_artists(c), key=lambda v: (v.upper(), v[0].islower())):
-        albums = sorted(query(c, 'date', 'album', albumartist=artist))
-        print('<tr class="newartist"><td rowspan="{0}">{1}</td>'.format(len(albums), artist))
-        for i, (date, album) in enumerate(albums):
-            rating = get_rating(c, artist, date, album)
-            if rating == '-' or rating == None:
-                output = ''
+            rate = int(parts[0])
+            max_rate = 5
+            output = ''
+            if rate % 2 == 0:
+                rate = int(rate / 2)
+                output += rate * '<i class="fa fa-star"></i>'
             else:
-                parts = str(rating).split(' ')
-                if not parts[0].isdigit():
-                    print('Error: rating number isn\'nt numeric: {0}'.format(rating))
-                    print('Occured at {0}--{1}--{2}'.format(artist, album, date))
-                    sys.exit(1)
+                rate = float(rate / 2)
+                first = int(str(rate).split('.')[0])
+                output += (first * '<i class="fa fa-star"></i>') + '<i class="fa fa-star-half-o"></i>'
+            output += int(max_rate - rate) * '<i class="fa fa-star-o"></i>'
 
-                rate = int(parts[0])
-                max_rate = 5
-                output = ''
-                if rate % 2 == 0:
-                    rate = int(rate / 2)
-                    output += rate * '<i class="fa fa-star"></i>'
-                else:
-                    rate = float(rate / 2)
-                    first = int(str(rate).split('.')[0])
-                    output += (first * '<i class="fa fa-star"></i>') + '<i class="fa fa-star-half-o"></i>'
+        print("<td>"+x['date']+"</td>")
+        print("")
+        print("    <td>"+x['album']+"</td>")
+        print("    <td>"+output+"</td>")
+        print("    </tr>")
+print("</tr></table></body></html>")
 
-                output += int(max_rate - rate) * '<i class="fa fa-star-o"></i>'
 
-            # templating libaries ftw
-            print('''
-            <td>{date}</td>
-            <td>{album}</td>
-            <td><font color="black">{output}</font></td>
-            </tr>
-            '''.format(date=date, album=album, output=output))
+    # example for x: {'artist': '[LAW]', 'date': '1998', 'rating': '-', 'album': 'Creature'}
+#    print("<tr class=\"newartist\"><td rowspan=\""+"10"+"\">"+x['artist']+"</td>")
+    # there are several dicts in list "newlist" with same artist value. how to print every album by x['artist']?
+#print('</table></body></html>')
+    
 
-    print('''
-    </tbody>
-    </table>
-    </div>
-    </body>
-    </html>
-    ''')
-
-if __name__ == '__main__':
-    main()
-
-#  vim: set ts=4 sw=4 tw=80 et :
