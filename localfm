@@ -44,7 +44,7 @@ else
     if [[ $3 == "--album" || $2 == "--album" ]]; then
         :
     else
-        echo -e "Most played tracks by artist \"${name}\":\n"
+        echo -e "Most played tracks by artist \"${1}\":\n"
     fi
     name="$1"
 fi
