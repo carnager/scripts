@@ -23,9 +23,10 @@ main () {
 printHelp () {
 cat << EOF
 local.fm
-Usage: ${0##*/} [-sa] [-n KEYWORD] [-c CHARACTER] [-l LINES]
+Usage: ${0##*/} [-sa] [-n {current,KEYWORD}] [-c CHARACTER] [-l LINES]
 
     -n "keyword"    keyword to search for (has to be first option)
+                    use "current" to use currently playing artist
     -s              colorize output
     -a              print album stats (needs "-n")
     -c "foo"        use character "foo" for histogram
@@ -47,7 +48,11 @@ while getopts "hasn:l:c:" opt; do
             exit 0
             ;;
         n)
-            name=$OPTARG
+            if [[ $OPTARG == "current" ]]; then
+                name="$(mpc current -f '%artist%')"
+            else
+                name=$OPTARG
+            fi
             ;;
         a)
             if [[ -z $name ]]; then
