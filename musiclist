@@ -64,8 +64,14 @@ print('''
         max-width:56em;
         background: white;
         }
+        @font-face {
+        font-family: "FontAwesome";
+        src: url('./font-awesome/fonts/fontawesome-webfont.eot?v=4.1.0');
+        font-weight: normal;
+        font-style: normal
+        }
 </style>
-<link href="https://css.53280.de/font-awesome.min.css" rel="stylesheet">
+<link href="font-awesome/css/font-awesome.min.css" rel="stylesheet">
 </head>
 <body>
 <div class="table-responsive">
