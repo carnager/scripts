@@ -1,27 +1,8 @@
 #!/bin/bash
 
-source $HOME/.config/dmenurc
-
-if [[ "$backend" == "rofi" ]]
-    then
-        function dmenu_t () {
-        rofi -font "$font" -fg "$nf" -bg "$nb" -hlfg "$sf" -hlbg "$sb" -o 90 -bc "$bc" -dmenu
-        }
-
-elif [[ "$backend" == "dmenu" ]]
-    then
-        if [[ "$dmenu_trans" == "1" ]]
-            then
-            function dmenu_t () {
-            dmenu -l 15 -fn "$font" -nf "$nf" -nb "$nb" -sf "$sf" -sb "$sb" -o 90
-            }
-        else
-            function dmenu_t () {
-            dmenu -l 15 -fn "$font" -nf "$nf" -nb "$nb" -sf "$sf" -sb "$sb"
-            }
-        fi
-fi
-
+function dmenu_t () {
+    rofi -dmenu $*
+}
 
 client=$(pacmd list-sink-inputs | grep -E 'client:|index:' | awk 'NR % 2 == 1 { o=$0 ; next } { print o " " $0 }'| awk '{print $2" "substr($0, index($0,$5))}' | dmenu_t -p "Clients: " $@)
 
