@@ -29,7 +29,7 @@ done
  <html>
 <head>
 <meta charset=\"utf-8\"/>
-<link rel=\"stylesheet\" href=\"https://scripts.53280.de/bootstrap.min.css\">
+<link rel=\"stylesheet\" href=\"https://css.53280.de/bootstrap.min.css\">
 <style>
         body{background:#eee}
         table{
@@ -38,7 +38,7 @@ done
         background: white;
         }
 </style>
-<link href=\"https://scripts.53280.de/font-awesome.min.css\" rel=\"stylesheet\">
+<link href=\"https://css.53280.de/font-awesome.min.css\" rel=\"stylesheet\">
 </head>
 <body>
 <div class=\"table-responsive\">
