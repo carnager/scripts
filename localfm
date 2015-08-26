@@ -17,6 +17,8 @@ main () {
         cat /tmp/list | awk -F ' - ' '{ print $1,"-",$3 }' | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
     else
         echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+        echo "---"
+        echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 /tmp/scrobbles | cut -c 1-10)"
     fi
 }
 
