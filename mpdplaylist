@@ -12,35 +12,47 @@
  #
  
  #USER=`whoami`
- STATS=`mpc stats | sed 's/$/\<br \/\>/'`
- PLAYLIST=`mpc playlist | sed 's/$/\<br \/\>/'`
- VERSION=`mpc version`
+ PLAYLIST=$(mpc playlist)
  FILE="mpdplaylist.html"
- DATE=`date -R`
+ DATE=$(date -R)
  
+rm -f /tmp/mpd_playlist_tracks
+echo "$PLAYLIST" | while read line; do
+    artist=$(echo "$line"|awk -F ' - ' '{ print $1 }')
+    title=$(echo "$line"|awk -F ' - ' '{ print $2 }')
+    echo "<tr class=\"newartist\"><td rowspan=\"1\">${artist}</td>" >> /tmp/mpd_playlist_tracks
+    echo "<td>${title}</td></tr>" >> /tmp/mpd_playlist_tracks
+done
+
+
  echo "<!-- Generated with mpdpl2html by pfish - $DATE -->
  <html>
- <head>
- <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /> 
- <title>MPD playlist of $USER</title>
- <style type=\"text/css\">
- body {color: #ffffff; background-color: #001A57; font-size: 12px;}
- h1 {color: #f28500; margin: 0; padding: 0;}
- h2 {color: #f28500; margin: 0; padding: 0;}
- hr {color: #f28500; border: 1;}
- </style>
- </head>
- <body>
- <h1>MPD playlist of $USER</h1>
+<head>
+<meta charset=\"utf-8\"/>
+<link rel=\"stylesheet\" href=\"http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css\">
+<style>
+        body{background:#eee}
+        table{
+        margin:5em auto;
+        max-width:56em;
+        background: white;
+        }
+</style>
+<link href=\"http://maxcdn.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css\" rel=\"stylesheet\">
+</head>
+<body>
+<div class=\"table-responsive\">
+
+<table id=\"music\" style=\"white-space: nowrap;\" class=\"table table-bordered\">
+<thead>
+<tr>
+<th>Artist</th>
+<th>Title</th>
+</tr>
+</thead>
+<tbody>
+
+ $(cat /tmp/mpd_playlist_tracks)
  <hr />
- <h2>Statistics:</h2>
- $VERSION
- <br /><br />
- $STATS
- <br />
- <h2>Playlist:</h2>
- $PLAYLIST
- <hr />
- <small>Generated with mpdpl2html by pfish - $DATE</small>
  </body>
  </html>" > $FILE
