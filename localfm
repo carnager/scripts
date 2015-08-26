@@ -1,7 +1,8 @@
 #!/bin/bash
 
 main () {
-    stuff=$(grep -i "$name" mpd-formatted-tracks.txt |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c)
+    #scp tauron:/home/carnager/.mpdscribble/mpd-formatted-tracks.txt /tmp/scrobbles > /dev/null
+    stuff=$(grep -i "$name" /tmp/scrobbles |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c)
     if [[ -n $album ]]; then
         if [[ -z $name ]]; then exit; fi
         rm -f /tmp/list
@@ -22,11 +23,11 @@ main () {
 printHelp () {
 cat << EOF
 local.fm
-Usage: ${0##*/} [-sa] [-c CHARACTER] [-l LINES] [-n KEYWORD]
+Usage: ${0##*/} [-sa] [-n KEYWORD] [-c CHARACTER] [-l LINES]
 
-    -n "keyword"    keyword (mandatory)
+    -n "keyword"    keyword to search for (has to be first option)
     -s              colorize output
-    -a              print album stats
+    -a              print album stats (needs "-n")
     -c "foo"        use character "foo" for histogram
     -l "int"        print "int" lines
 EOF
@@ -34,6 +35,11 @@ EOF
 
 OPTIND=1
 
+# default options
+char=ba
+lines=10
+
+# parse arguments
 while getopts "hasn:l:c:" opt; do
     case "$opt" in
         h)
@@ -44,7 +50,12 @@ while getopts "hasn:l:c:" opt; do
             name=$OPTARG
             ;;
         a)
-            album=true
+            if [[ -z $name ]]; then
+                echo "No artist specified"
+                exit 0
+            else
+                album=true
+            fi
             ;;
         l)
             lines=$OPTARG
