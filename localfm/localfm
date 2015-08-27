@@ -27,8 +27,8 @@ getScrobbles () {
 }
 
 main () {
-    stuff=$(grep -i "$name" $HOME/.config/localfm/combined.log |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c)
-    artists=$(grep -i "$name" $HOME/.config/localfm/combined.log | awk -F ' - ' '{ print $1 }' | awk '{ print substr($0, index($0,$2)) }' | sort | uniq -c | sort)
+    stuff=$(grep -i "$name" $HOME/.config/localfm/combined.log |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c | sort -nr)
+    artists=$(grep -i "$name" $HOME/.config/localfm/combined.log | awk -F ' - ' '{ print $1 }' | awk '{ print substr($0, index($0,$2)) }' | sort | uniq -c | sort -nr)
     if [[ -n $album ]]; then
         if [[ -z $name ]]; then exit; fi
         rm -f /tmp/list
@@ -37,16 +37,16 @@ main () {
             split=$(echo "$line" | awk '{first = $1; $1 = ""; print $0}' | cut -c 2-)
             artist=$(echo "$split" | awk -F ' - ' '{ print $1 }')
             title=$(echo "$split" | awk -F ' - ' '{ print $2 }')
-            echo -e "$(mpc search --format '%artist% - %album%' artist "${name}" title "${title}" | head -1)" >> /tmp/list
+            echo -e "$(echo ${plays}) $(mpc search --format '%artist% - %album%' albumartist "${name}" title "${title}" | head -1)" >> /tmp/list
         done
         echo -e "Most played albums for keyword \"${name}\":\n"   
-        cat /tmp/list | sort | uniq -c | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
+        cat /tmp/list | sort -nr | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
     else
         if [[ -n "$artist" ]]; then
             echo -e "Top ${lines} artists:\n"
-            echo "${artists}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+            echo "${artists}" | sort -nr | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
             echo "---"
-            echo "Scrobbled $(echo "${artists}" | sort -u | wc -l) artists since $(head -1 $HOME/.config/localfm/combined.log | cut -c 1-10)"
+            echo "Scrobbled $(echo "${artists}" | sort -nr | wc -l) artists since $(head -1 $HOME/.config/localfm/combined.log | cut -c 1-10)"
         else
             echo -e "Top ${lines} tracks for keyword \"${name}\"\n"
             echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
