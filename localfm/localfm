@@ -45,11 +45,13 @@ main () {
         if [[ -n "$artist" ]]; then
             echo -e "Top ${lines} artists:\n"
             echo "${artists}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+            echo "---"
+            echo "Scrobbled $(echo "${artists}" | sort -u | wc -l) artists since $(head -1 $HOME/.config/localfm/combined.log | cut -c 1-10)"
         else
             echo -e "Top ${lines} tracks for keyword \"${name}\"\n"
             echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
             echo "---"
-            echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 /tmp/scrobbles | cut -c 1-10)"
+            echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 $HOME/.config/localfm/combined.log | cut -c 1-10)"
         fi
     fi
 }
