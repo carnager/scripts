@@ -25,3 +25,5 @@ rockbox="/path/to/mounted/rockbox/device"
 ```
 
 
+# Screenshot
+![local.fm](screenshot.png "local.fm in action")
