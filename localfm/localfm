@@ -4,15 +4,19 @@ source $HOME/.config/localfm/config
 
 # create scrobble files from sources
 getScrobbles () {
-    # copy mpd scrobbles
-    echo "Getting mpd scrobbles"
-    scp -q "${mpdscribble}" $HOME/.config/localfm/scrobbles.mpd
+    if [[ -n ${mpdscribble} ]]; then
+        # copy mpd scrobbles
+        echo "Getting mpd scrobbles"
+        scp -q "${mpdscribble}" $HOME/.config/localfm/scrobbles.mpd
+    fi
     
     # check if rockbox is mounted and create scrobbles file
-    if [[ -f "${rockbox}/.scrobbler.log" ]]; then
-        echo "Getting rockbox scrobbles"
-        cp "${rockbox}/.scrobbler.log" "/tmp/rockbox.log"
-        awk -F '\t' 'NR > 3 { print strftime("%Y-%m-%dT%H:%M:%S+0200", $7), $1 " - " $3 }' /tmp/rockbox.log > $HOME/.config/localfm/scrobbles.$(date +%s).rockbox
+    if [[ -n ${rockbox} ]]; then
+        if [[ -f "${rockbox}/.scrobbler.log" ]]; then
+            echo "Getting rockbox scrobbles"
+            cp "${rockbox}/.scrobbler.log" "/tmp/rockbox.log"
+            awk -F '\t' 'NR > 3 { print strftime("%Y-%m-%dT%H:%M:%S+0200", $7), $1 " - " $3 }' /tmp/rockbox.log > $HOME/.config/localfm/scrobbles.$(date +%s).rockbox
+        fi
     fi
     
     # create combined scrobbles file
