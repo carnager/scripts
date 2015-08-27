@@ -8,7 +8,11 @@
 
 # Features
 * Generate Stats from mpdscribble log files
+  + Most listenened Tracks
+  + Most listenened Albums by Artist
+  + Top Artists
 * Ability to use Rockbox .scrobbler files
+* Filter output by keyword
 
 # Dependencies
 
