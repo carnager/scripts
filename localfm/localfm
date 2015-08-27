@@ -28,7 +28,7 @@ getScrobbles () {
 
 main () {
     stuff=$(grep -i "$name" $HOME/.config/localfm/combined.log |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c | sort -nr)
-    artists=$(grep -i "$name" $HOME/.config/localfm/combined.log | awk -F ' - ' '{ print $1 }' | awk '{ print substr($0, index($0,$2)) }' | sort | uniq -c | sort -nr)
+    artists=$(cat $HOME/.config/localfm/combined.log | awk -F ' - ' '{ print $1 }' | awk '{ print substr($0, index($0,$2)) }' | sort | uniq -c | sort -nr)
     if [[ -n $album ]]; then
         if [[ -z $name ]]; then exit; fi
         rm -f /tmp/list
