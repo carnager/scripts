@@ -9,7 +9,7 @@
 # Features
 * Generate Stats from mpdscribble log files
   + Most listenened Tracks
-  + Most listenened Albums by Artist
+  + Most listenened Albums by Artist (only albums from mpd library for now). For other albums to be displayed too, mpdscribble needs to fill feature request [4417](http://bugs.musicpd.org/view.php?id=4417)
   + Top Artists
 * Ability to use Rockbox .scrobbler files
 * Filter output by keyword
