@@ -1,8 +1,29 @@
 #!/bin/bash
 
+source $HOME/.config/localfm/config
+
+# create scrobble files from sources
+getScrobbles () {
+    # copy mpd scrobbles
+    echo "Getting mpd scrobbles"
+    scp -q "${mpdscribble}" $HOME/.config/localfm/scrobbles.mpd
+    
+    # check if rockbox is mounted and create scrobbles file
+    if [[ -f "${rockbox}/.scrobbler.log" ]]; then
+        echo "Getting rockbox scrobbles"
+        cp "${rockbox}/.scrobbler.log" "/tmp/rockbox.log"
+        awk -F '\t' 'NR > 3 { print strftime("%Y-%m-%dT%H:%M:%S+0200", $7), $1 " - " $3 }' /tmp/rockbox.log > $HOME/.config/localfm/scrobbles.$(date +%s).rockbox
+    fi
+    
+    # create combined scrobbles file
+    echo "Creating combined scrobbles file"
+    cat $HOME/.config/localfm/scrobbles.* | sort > $HOME/.config/localfm/combined.log
+    echo "...done"
+    exit
+}
+
 main () {
-    #scp tauron:/home/carnager/.mpdscribble/mpd-formatted-tracks.txt /tmp/scrobbles > /dev/null
-    stuff=$(grep -i "$name" /tmp/scrobbles |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c)
+    stuff=$(grep -i "$name" $HOME/.config/localfm/combined.log |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c)
     if [[ -n $album ]]; then
         if [[ -z $name ]]; then exit; fi
         rm -f /tmp/list
@@ -13,9 +34,10 @@ main () {
             title=$(echo "$split" | awk -F ' - ' '{ print $2 }')
             echo -e "${plays} $(mpc search --format '%artist% - %title% - %album%' artist "${artist}" title "${title}" | head -1)" >> /tmp/list
         done
-        echo -e "Most track plays (albums) for artist \"${name}\":\n"   
+        echo -e "Most played albums for keyword \"${name}\":\n"   
         cat /tmp/list | awk -F ' - ' '{ print $1,"-",$3 }' | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
     else
+        echo -e "Top ${lines} tracks for keyword \"${name}\"\n"
         echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
         echo "---"
         echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 /tmp/scrobbles | cut -c 1-10)"
@@ -24,7 +46,6 @@ main () {
 
 printHelp () {
 cat << EOF
-local.fm
 Usage: ${0##*/} [-sa] [-n {current,KEYWORD}] [-c CHARACTER] [-l LINES]
 
     -n "keyword"    keyword to search for (has to be first option)
@@ -33,6 +54,7 @@ Usage: ${0##*/} [-sa] [-n {current,KEYWORD}] [-c CHARACTER] [-l LINES]
     -a              print album stats (needs "-n")
     -c "foo"        use character "foo" for histogram
     -l "int"        print "int" lines
+    -g              update local scrobble files
 EOF
 }
 
@@ -43,7 +65,7 @@ char=ba
 lines=10
 
 # parse arguments
-while getopts "hasn:l:c:" opt; do
+while getopts "hgasn:l:c:" opt; do
     case "$opt" in
         h)
             printHelp
@@ -72,6 +94,9 @@ while getopts "hasn:l:c:" opt; do
             ;;
         s)
             color="--color"
+            ;;
+        g)
+            getScrobbles
             ;;
     esac
 done
