@@ -28,6 +28,7 @@ getScrobbles () {
 
 main () {
     stuff=$(grep -i "$name" $HOME/.config/localfm/combined.log |awk '{first = $1; $1 = ""; print $0 }' | sort | uniq -c)
+    artists=$(grep -i "$name" $HOME/.config/localfm/combined.log | awk -F ' - ' '{ print $1 }' | awk '{ print substr($0, index($0,$2)) }' | sort | uniq -c | sort)
     if [[ -n $album ]]; then
         if [[ -z $name ]]; then exit; fi
         rm -f /tmp/list
@@ -41,20 +42,26 @@ main () {
         echo -e "Most played albums for keyword \"${name}\":\n"   
         cat /tmp/list | awk -F ' - ' '{ print $1,"-",$3 }' | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
     else
-        echo -e "Top ${lines} tracks for keyword \"${name}\"\n"
-        echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
-        echo "---"
-        echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 /tmp/scrobbles | cut -c 1-10)"
+        if [[ -n "$artist" ]]; then
+            echo -e "Top ${lines} artists:\n"
+            echo "${artists}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+        else
+            echo -e "Top ${lines} tracks for keyword \"${name}\"\n"
+            echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+            echo "---"
+            echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 /tmp/scrobbles | cut -c 1-10)"
+        fi
     fi
 }
 
 printHelp () {
 cat << EOF
-Usage: ${0##*/} [-sa] [-n {current,KEYWORD}] [-c CHARACTER] [-l LINES]
+Usage: ${0##*/} [-saA] [-n {current,KEYWORD}] [-c CHARACTER] [-l LINES]
 
     -n "keyword"    keyword to search for (has to be first option)
                     use "current" to use currently playing artist
     -s              colorize output
+    -A              print artist stats
     -a              print album stats (needs "-n")
     -c "foo"        use character "foo" for histogram
     -l "int"        print "int" lines
@@ -69,7 +76,7 @@ char=ba
 lines=10
 
 # parse arguments
-while getopts "hgasn:l:c:" opt; do
+while getopts "hgAasn:l:c:" opt; do
     case "$opt" in
         h)
             printHelp
@@ -101,6 +108,9 @@ while getopts "hgasn:l:c:" opt; do
             ;;
         g)
             getScrobbles
+            ;;
+        A)
+            artist=true
             ;;
     esac
 done
