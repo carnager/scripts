@@ -16,6 +16,7 @@ getScrobbles () {
             echo "Getting rockbox scrobbles"
             cp "${rockbox}/.scrobbler.log" "/tmp/rockbox.log"
             awk -F '\t' 'NR > 3 { print strftime("%Y-%m-%dT%H:%M:%S%z", $7), $1 " - " $3 }' /tmp/rockbox.log > $HOME/.config/localfm/scrobbles.$(date +%s).rockbox
+            echo "Imported $(( $(wc -l /tmp/rockbox.log | awk '{ print $1}' ) - 3 )) tracks from Rockbox"
         fi
     fi
     
@@ -35,7 +36,6 @@ main () {
         echo "${stuff}" | sort | while read line; do
             plays=$(echo "$line" | awk -F ' ' '{ print $1 }')
             split=$(echo "$line" | awk '{first = $1; $1 = ""; print $0}' | cut -c 2-)
-            artist=$(echo "$split" | awk -F ' - ' '{ print $1 }')
             title=$(echo "$split" | awk -F ' - ' '{ print $2 }')
             echo -e "$(echo ${plays}) $(mpc search --format '%artist% - %album%' albumartist "${name}" title "${title}" | head -1)" >> /tmp/list
         done
