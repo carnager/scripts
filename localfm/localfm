@@ -49,16 +49,16 @@ main () {
             echo -e "$(echo ${plays}) $(mpc search --format '%artist% - %album%' albumartist "${name}" title "${title}" | head -1)" >> /tmp/list
         done
         echo -e "Most played albums for keyword \"${name}\":\n"   
-        cat /tmp/list | sort -nr | distribution.py -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
+        cat /tmp/list | sort -nr | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null | grep -vE "^-"
     else
         if [[ -n "$artist" ]]; then
             echo -e "Top ${lines} artists:\n"
-            echo "${artists}" | sort -nr | distribution.py -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+            echo "${artists}" | sort -nr | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
             echo "---"
             echo "Scrobbled $(echo "${artists}" | sort -nr | wc -l) artists since $(head -1 $HOME/.config/localfm/combined.log | cut -c 1-10)"
         else
             echo -e "Top ${lines} tracks for keyword \"${name}\"\n"
-            echo "${stuff}" | sort | distribution.py -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
+            echo "${stuff}" | sort | distribution -g --height=$lines --size=full --char=$char --width=100 ${color} 2>/dev/null
             echo "---"
             echo "$(echo "${stuff}" | awk '{s+=$1} END {print s}') tracks scrobbled matching keyword \"${name}\" since $(head -1 $HOME/.config/localfm/combined.log | cut -c 1-10)"
         fi
@@ -69,14 +69,14 @@ printHelp () {
 cat << EOF
 Usage: ${0##*/} [-saA] [-n {current,KEYWORD}] [-c CHARACTER] [-l LINES]
 
-    -n "keyword"    keyword to search for (has to be first option)
-                    use "current" to use currently playing artist
-    -s              colorize output
-    -A              print artist stats
-    -a              print album stats (needs "-n")
-    -c "foo"        use character "foo" for histogram
-    -l "int"        print "int" lines
-    -g              update local scrobble files
+    -n "keyword"     keyword to search for (has to be first option)
+                     use "current" to use currently playing artist
+    -s "true/false"  colorize output
+    -A               print artist stats
+    -a               print album stats (needs "-n")
+    -c "foo"         use character "foo" for histogram
+    -l "int"         print "int" lines
+    -g               update local scrobble files
 EOF
 }
 
@@ -92,9 +92,15 @@ if [[ -z $lines ]]; then
 else 
     lines=$lines
 fi
+if [[ $color == "true" ]]; then
+    color="--color"
+elif [[ $color == "false" ]]; then
+    color=""
+fi
+
 
 # parse arguments
-while getopts "hgAasn:l:c:" opt; do
+while getopts "hgAas:n:l:c:" opt; do
     case "$opt" in
         h)
             printHelp
@@ -122,7 +128,12 @@ while getopts "hgAasn:l:c:" opt; do
             char=$OPTARG
             ;;
         s)
-            color="--color"
+            color="$OPTARG"
+            if [[ $color == "true" ]]; then
+                color="--color"
+            elif [[ $color == "false" ]]; then
+                color=""
+            fi
             ;;
         g)
             getScrobbles
