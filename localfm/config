@@ -1,5 +1,16 @@
+# character to use for graphs
+# ba, pl, pb, ba, bl, em, me, di, dt, sq
+# have special meaning.
+# See https://github.com/philovivero/distribution
+char=ba
+
+# default number of lines to use
+lines=10
+
+# scrobbling sources
 # mpdscribble source file
 mpdscribble="tauron:/home/carnager/.mpdscribble/mpd-formatted-tracks.txt"
+local=false
 
 # rockbox mount point
 rockbox="/run/media/carnager/0123-4567"
