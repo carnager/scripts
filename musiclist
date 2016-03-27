@@ -39,7 +39,7 @@ def createAlbumsList(tracks):
         t.update([(k, reduceToFstElm(v)) for (k, v) in t.items() if k in ks])
     return tracks
 
-alist=client.search('filename', " ")
+alist=client.search('filename', "flac/")
 albumlist=createAlbumsList(alist)
 newlist = []
 for album in albumlist:
@@ -56,7 +56,7 @@ print('''
 <html>
 <head>
 <meta charset="utf-8"/>
-<link rel="stylesheet" href="https://css.53280.de/bootstrap.min.css">
+<link rel="stylesheet" href="https://files.53280.de/css/bootstrap.min.css">
 <style>
         body{background:#eee}
         table{
