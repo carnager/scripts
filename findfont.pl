@@ -75,7 +75,7 @@ findfonts.pl - find fonts providing certain characters
 
 =head1 SYNOPSIS
 
-findfonts.pl [command] {hex,glyph}
+findfonts.pl [command] [hex,glyph]
 
   Commands:
     -x, --hex         Search fonts by hex code.
