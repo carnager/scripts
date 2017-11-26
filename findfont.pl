@@ -17,9 +17,9 @@ my @font_list = map { (split /:/, $_)[0] } `fc-list`;
 
 my ($opt_hex, $opt_help, $opt_char);
 
-GetOptions ("hex=s"  => \$opt_hex,
-            "char=s" => \$opt_char,
-            "help"   => \$opt_help)
+GetOptions ("x|hex=s"  => \$opt_hex,
+            "c|char=s" => \$opt_char,
+            "h|help"   => \$opt_help)
 or die("Invalid option. Try --help\n");
 
 sub print_fonts {
@@ -78,8 +78,9 @@ findfonts.pl - find fonts providing certain characters
 findfonts.pl [command] {hex,glyph}
 
   Commands:
-    --hex         Search fonts by hex code.
-    --char        Search fonts by glyph.
+    -x, --hex         Search fonts by hex code.
+    -c, --char        Search fonts by glyph.
+    -h, --help        Show this help.
 
   Examples:
     findfonts.pl --hex 1f49f
