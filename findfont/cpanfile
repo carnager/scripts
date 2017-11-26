@@ -1,0 +1,1 @@
+requires 'Font::FreeType', '0.09';
