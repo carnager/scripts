@@ -2,6 +2,9 @@
 
 use utf8;
 use autodie;
+use strict;
+use warnings;
+use autodie;
 use Data::Printer;
 use Encode qw/decode encode/;
 use Font::FreeType;
@@ -21,7 +24,7 @@ or die("Invalid option. Try --help\n");
 
 sub print_fonts {
     my ($char, $hex, $char_name) = @_;
-    $char = encode('UTF-8', $char);
+    $char                        = encode('UTF-8', $char);
 
     print STDERR "Glyph:   $char\n";
     print STDERR "Name:    $char_name\n";
@@ -38,36 +41,28 @@ sub print_fonts {
 }
 
 sub get_vars_from_hex {
-    my ($hex) = @_;
-    my $glyph = chr(hex($hex));
+    my ($hex)     = @_;
+    my $glyph     = chr(hex($hex));
     my $char_name = charnames::viacode($hex);
+
     return($glyph, $hex, $char_name);
 }
 
 sub get_vars_from_glyph {
-    my ($glyph) = @_;
-    my $hex = sprintf "%04x", ord decode('UTF-8', $glyph);
+    my ($glyph)   = @_;
+    my $hex       = sprintf "%04x", ord decode('UTF-8', $glyph);
     my $char_name = charnames::viacode(hex($hex));
+
     return($glyph, $hex, $char_name);
 }
     
 sub main {
     my ($glyph, $hex, $char_name);
 
-    if(defined $opt_hex) {
-        ($glyph, $hex, $char_name) = get_vars_from_hex($opt_hex);
-    }
-    elsif(defined $opt_char) {
-        ($glyph, $hex, $char_name) = get_vars_from_glyph($opt_char);
-        $glyph = decode('UTF-8', $glyph);
-    }
-    elsif(defined $opt_help) {
-        pod2usage(1);
-    }
-    else {
-        pod2usage(1);
-        die;
-    }
+    if   (defined $opt_hex)  { ($glyph, $hex, $char_name) = get_vars_from_hex($opt_hex); }
+    elsif(defined $opt_char) { ($glyph, $hex, $char_name) = get_vars_from_glyph($opt_char); $glyph = decode('UTF-8', $glyph); }
+    else                     { pod2usage(1); die unless(defined $opt_help)}
+
     print_fonts($glyph, $hex, $char_name);
 }
 
