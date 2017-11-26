@@ -1,3 +1,5 @@
+#!/usr/bin/env perl
+
 use utf8;
 use autodie;
 use Data::Printer;
