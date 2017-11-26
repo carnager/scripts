@@ -5,7 +5,7 @@ use autodie;
 use strict;
 use warnings;
 use autodie;
-use Data::Printer;
+#use Data::Printer;
 use Encode qw/decode encode/;
 use Font::FreeType;
 use Getopt::Long;
