@@ -22,6 +22,7 @@ function main() {
   xrandr_cmd='xrandr'
 
   while ! all_outputs_configured && (( $iteration <= $max_iteration )); do
+    mode=""
     if (( iteration++ )); then
       select_output 'Select next output:' 'unconfigured' | read output
       select_position "${output}" | read position
